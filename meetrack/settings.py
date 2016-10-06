@@ -126,16 +126,23 @@ SMS_AUTH = {
     'ACCOUNT_SID': 'ACb3942b775d299a83395ac07b89c8890e',
     'AUTH_TOKEN': 'b3855a93c588996d3be0de9dba142d49',
     'FROM_NUMBER': '+12054154471',
-    'ATTEMPTS': 228,
+    'ATTEMPTS_LIMIT': 5,
+    'LIFE_TIME': 60 * 1000,
 }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {"max_connections": 100},
-        }
-    }
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": "redis://127.0.0.1:6379/1",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "CONNECTION_POOL_KWARGS": {"max_connections": 100},
+#         }
+#     }
+# }
+REDIS = {
+    'HOST': 'localhost',
+    'PORT': '6379',
+    'DB': 0,
+    'POOL_SIZE': 100
 }

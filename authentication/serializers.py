@@ -1,7 +1,10 @@
 from rest_framework import serializers
 import phonenumbers
+from rest_framework.exceptions import Throttled
 from django.utils.translation import ugettext_lazy as _
 from phonenumbers.phonenumberutil import NumberParseException
+from . import authcode
+
 
 class PhoneNumberField(serializers.CharField):
     default_error_messages = {
@@ -18,11 +21,9 @@ class PhoneNumberField(serializers.CharField):
         return data
 
 
-class PhoneNumberSerializer(serializers.Serializer):
+class PhoneSerializer(serializers.Serializer):
     phone = PhoneNumberField()
 
-    def update(self, instance, validated_data):
-        pass
 
-    def create(self, validated_data):
-        pass
+class ConfirmPhoneSerializer(PhoneSerializer):
+    code = serializers.CharField()
