@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import Throttled, ValidationError
 from rest_framework.response import Response
 
-from . import authcode
+from . import smscode, authtoken
 from .serializers import PhoneSerializer, ConfirmPhoneSerializer
 
 User = get_user_model()
@@ -17,8 +17,8 @@ def send_code(request):
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
     phone = serializer.validated_data['phone']
     try:
-        authcode.new(phone)
-    except authcode.LimitExceededError:
+        smscode.new(phone)
+    except smscode.LimitExceededError:
         raise Throttled()
     return Response(status=status.HTTP_201_CREATED)
 
@@ -31,9 +31,10 @@ def login(request):
     phone = serializer.validated_data['phone']
     code = serializer.validated_data['code']
     try:
-        authcode.validate(phone, code)
-    except authcode.ValidationError:
+        smscode.validate(phone, code)
+    except smscode.ValidationError:
         raise ValidationError({'code': 'Code is invalid.'})
-    except authcode.LimitExceededError:
+    except smscode.LimitExceededError:
         raise Throttled()
+    print(authtoken.get_or_create(1))
     return Response()
