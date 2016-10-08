@@ -3,7 +3,7 @@ import phonenumbers
 from rest_framework.exceptions import Throttled
 from django.utils.translation import ugettext_lazy as _
 from phonenumbers.phonenumberutil import NumberParseException
-from . import authcode
+from . import smscode
 
 
 class PhoneNumberField(serializers.CharField):
