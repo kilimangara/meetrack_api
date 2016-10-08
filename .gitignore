@@ -1,4 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
+*.pyc
 ENV
+__pycache__
 tmp.py
 .idea
