@@ -86,3 +86,8 @@ def get_or_create(user_id):
     except TokenDoesNotExist:
         token = create(user_id)
     return token
+
+
+def delete_all():
+    r = redis.StrictRedis(connection_pool=conn_pool)
+    r.flushall()

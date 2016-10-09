@@ -70,6 +70,7 @@ class SendPhoneSerializer(serializers.Serializer):
 class ConfirmPhoneSerializer(SendPhoneSerializer):
     validation_error = ValidationError({'code': ['Code is invalid.']})
     code = serializers.CharField(max_length=SendPhoneSerializer.CODE_LENGTH, min_length=SendPhoneSerializer.CODE_LENGTH)
+    is_new = serializers.BooleanField(default=False, write_only=True)
 
     def validate(self, attrs):
         phone_number = attrs['phone']
@@ -101,5 +102,5 @@ class NewUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['name', 'phone', 'created', 'token']
+        fields = ['id', 'name', 'phone', 'created', 'token']
         read_only_fields = ['created', 'token']

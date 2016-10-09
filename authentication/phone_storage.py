@@ -6,13 +6,15 @@ class PhoneDoesNotExist(Exception):
     pass
 
 
+conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
+                                 port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+
+
 class Phone(object):
     PHONE_KEY = 'phone:{}'
-    conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                                     port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
 
     def __init__(self, phone):
-        self.r = redis.StrictRedis(connection_pool=self.conn_pool)
+        self.r = redis.StrictRedis(connection_pool=conn_pool)
         self.phone = phone
         self.key = self.PHONE_KEY.format(phone)
 
@@ -38,6 +40,11 @@ class Phone(object):
         if attempts is None:
             attempts = self.get_attempts() + 1
         pipe.hmset(self.key, {'code': code, 'attempts': attempts})
-        if time:
+        if time is not None:
             pipe.pexpire(self.key, time)
         pipe.execute()
+
+
+def delete_all():
+    r = redis.StrictRedis(connection_pool=conn_pool)
+    r.flushall()

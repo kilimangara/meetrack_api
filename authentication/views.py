@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
@@ -16,7 +17,8 @@ def send_code(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
     serializer.save_code()
-    serializer.send_code()
+    if not hasattr(settings, 'TEST_SMS'):
+        serializer.send_code()
     phone = serializer.validated_data['phone']
     is_new = not User.objects.filter(phone=phone).exists()
     return Response({'is_new': is_new}, status.HTTP_201_CREATED)
@@ -28,7 +30,7 @@ def login(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
     phone = serializer.validated_data['phone']
-    if not request.data.get('is_new'):
+    if not serializer.validated_data['is_new']:
         try:
             user_id = User.objects.only('id').get(phone=phone).id
         except User.DoesNotExist:
