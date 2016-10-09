@@ -122,6 +122,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'authentication.auth.RedisTokenAuthentication'
+    ],
+    'DATETIME_FORMAT': '%s',
+}
+
 SMS_AUTH = {
     'REQUEST_URL': 'https://api.twilio.com/2010-04-01/Accounts/ACb3942b775d299a83395ac07b89c8890e/Messages.json',
     'ACCOUNT_SID': 'ACb3942b775d299a83395ac07b89c8890e',

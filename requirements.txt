@@ -4,4 +4,3 @@ psycopg2
 djangorestframework
 phonenumbers
 redis
-django-redis
