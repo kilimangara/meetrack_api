@@ -1,11 +1,13 @@
 import time
-from rest_framework.test import APITestCase
+
 from django.conf import settings
-from django.test import override_settings
 from django.contrib.auth import get_user_model
+from django.test import override_settings
+from rest_framework.test import APITestCase
+
 from . import phone_storage
-from .phone_storage import Phone
 from . import token_storage
+from .phone_storage import Phone
 
 User = get_user_model()
 
@@ -164,3 +166,31 @@ class PhoneConfirmTests(APITestCase):
         user_id = r.data['id']
         self.assertEqual(token_storage.authenticate(r.data['token']), user_id)
         self.assertEqual(User.objects.get(phone=phone_number).id, user_id)
+
+
+class AuthTests(APITestCase):
+    url = '/api/account/'
+
+    def setUp(self):
+        self.user = User.objects.create()
+
+    @classmethod
+    def different_token(cls, token):
+        if token[0] == 'a':
+            token = 'b' + token[1:]
+        else:
+            token = 'a' + token[1:]
+        return token
+
+    def test_incorrect_creds(self):
+        token = token_storage.create(self.user.id)
+        incorrect_token = self.different_token(token)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + incorrect_token)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 401)
+
+    def test_correct_creds(self):
+        token = token_storage.create(self.user.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)

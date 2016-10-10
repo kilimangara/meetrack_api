@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'users',
     'authentication',
-    'django_redis',
+    'contacts',
 ]
 AUTH_USER_MODEL = 'users.User'
 
