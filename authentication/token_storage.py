@@ -41,34 +41,21 @@ def authenticate(token):
     user_id = int(r.get(token_key) or 0)
     if not user_id:
         raise AuthenticationFailed()
-    user_key = get_user_key(user_id)
-    token_redis = (r.get(user_key) or b'').decode()
-    if token_redis != token:
-        pipe = r.pipeline()
-        pipe.delete(token_key)
-        pipe.delete(user_key)
-        pipe.execute()
-        raise AuthenticationFailed()
     return user_id
 
 
-def get(user_id):
+def delete(user_id):
     r = get_redis()
     user_key = get_user_key(user_id)
     token = (r.get(user_key) or b'').decode()
-    if token:
-        token_key = get_token_key(token)
-        user_id_redis = int(r.get(token_key) or 0)
-        if user_id == user_id_redis:
-            return token
-        pipe = r.pipeline()
-        pipe.delete(token_key)
-        pipe.delete(user_key)
-        pipe.execute()
-    raise TokenDoesNotExist()
+    if not token:
+        return
+    token_key = get_token_key(token)
+    r.delete(user_key, token_key)
 
 
 def create(user_id):
+    delete(user_id)
     r = get_redis()
     user_key = get_user_key(user_id)
     token = generate_token()
@@ -80,14 +67,6 @@ def create(user_id):
     return token
 
 
-def get_or_create(user_id):
-    try:
-        token = get(user_id)
-    except TokenDoesNotExist:
-        token = create(user_id)
-    return token
-
-
 def delete_all():
-    r = redis.StrictRedis(connection_pool=conn_pool)
+    r = get_redis()
     r.flushall()

@@ -35,7 +35,7 @@ def login(request):
             user_id = User.objects.only('id').get(phone=phone).id
         except User.DoesNotExist:
             raise NotFound()
-        token = token_storage.get_or_create(user_id)
+        token = token_storage.create(user_id)
         return Response({'user_id': user_id, 'token': token}, status.HTTP_200_OK)
     serializer = NewUserSerializer(data=request.data)
     if not serializer.is_valid():

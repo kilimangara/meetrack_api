@@ -1,5 +1,6 @@
 requests
 django
+Pillow
 psycopg2
 djangorestframework
 phonenumbers

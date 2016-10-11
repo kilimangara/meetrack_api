@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from .serializers import UserSerializer, UsersIdsSerializer, ForeignUserSerializer
+from .serializers import AccountSerializer, UserIdsSerializer, UserSerializer
 
 User = get_user_model()
 
@@ -15,10 +15,10 @@ User = get_user_model()
 def account(request):
     user = request.user
     if request.method == 'GET':
-        serializer = UserSerializer(user)
+        serializer = AccountSerializer(user)
         return Response(serializer.data, status.HTTP_200_OK)
     elif request.method == 'PATCH':
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = AccountSerializer(user, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
         serializer.save()
@@ -28,12 +28,11 @@ def account(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def users_list(request):
-    ids_serializer = UsersIdsSerializer(data=request.query_params)
+    ids_serializer = UserIdsSerializer(data=request.query_params)
     if not ids_serializer.is_valid():
         return Response(ids_serializer.errors, status.HTTP_400_BAD_REQUEST)
-
     matched_users = ids_serializer.registered_users()
-    serializer = ForeignUserSerializer(matched_users, context={'viewer': request.user}, many=True)
+    serializer = UserSerializer(matched_users, context={'viewer': request.user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
@@ -45,7 +44,24 @@ def user_details(request, pk):
     except User.DoesNotExist:
         raise NotFound()
     if user != request.user:
-        serializer = ForeignUserSerializer(user, context={'viewer': request.user})
+        serializer = UserSerializer(user, context={'viewer': request.user})
     else:
-        serializer = UserSerializer(user)
+        serializer = AccountSerializer(user)
+    return Response(serializer.data, status.HTTP_200_OK)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def blacklist(request):
+    user = request.user
+    if request.method != 'GET':
+        ids_serializer = UserIdsSerializer(data=request.data)
+        if not ids_serializer.is_valid():
+            return Response(ids_serializer.errors, status.HTTP_400_BAD_REQUEST)
+        user_ids = ids_serializer.registered_user_ids()
+        if request.method == 'PUT':
+            user.put_into_blacklist(user_ids)
+        else:
+            user.remove_from_blacklist(user_ids)
+    serializer = UserSerializer(user.blacklist, context={'viewer': user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)

@@ -120,7 +120,7 @@ class PhoneConfirmTests(APITestCase):
         token = token_storage.create(u.id)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['token'], token)
+        self.assertNotEqual(r.data['token'], token)
         self.assertEqual(r.data['user_id'], u.id)
 
     def test_sign_in_new_token(self):
@@ -194,3 +194,16 @@ class AuthTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 200)
+
+    def test_retry_token(self):
+        old_token = token_storage.create(self.user.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + old_token)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        new_token = token_storage.create(self.user.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + new_token)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + old_token)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 401)

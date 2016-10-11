@@ -1,5 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
 *.pyc
+media
 ENV
 __pycache__
 tmp.py

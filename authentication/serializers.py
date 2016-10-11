@@ -75,6 +75,8 @@ class ConfirmPhoneSerializer(SendPhoneSerializer):
     def validate(self, attrs):
         phone_number = attrs['phone']
         code = attrs['code']
+        if settings.DEBUG and code == settings.SMS_AUTH['DEBUG_CODE']:
+            return attrs
         phone = Phone(phone_number)
         try:
             real_code, count = phone.get()
@@ -102,5 +104,5 @@ class NewUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'created', 'token']
+        fields = ['id', 'name', 'phone', 'created', 'token', 'avatar']
         read_only_fields = ['created', 'token']
