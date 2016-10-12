@@ -19,7 +19,6 @@ from django.conf import settings
 urlpatterns = [
     url(r'^api/auth/', include('authentication.urls')),
     url(r'^api/', include('users.urls')),
-    url(r'^api/contacts/', include('contacts.urls'))
 ]
 if settings.DEBUG:
     urlpatterns += static.static(settings.MEDIA_URL,

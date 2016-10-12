@@ -7,4 +7,5 @@ urlpatterns = [
     url(r'^users/$', views.users_list),
     url(r'^users/(?P<pk>\d+)/$', views.user_details),
     url(r'^blacklist/$', views.blacklist),
+    url(r'^contacts/$', views.contacts),
 ]

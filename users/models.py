@@ -1,8 +1,10 @@
-from django.db import models
-from django.core.files.storage import FileSystemStorage
-from django.contrib.auth.models import AbstractBaseUser
-from django.db.transaction import atomic
+from bulk_update.helper import bulk_update
+from bulk_update.manager import BulkUpdateManager
 from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser
+from django.core.files.storage import FileSystemStorage
+from django.db import models
+from django.db.transaction import atomic
 
 FIELD_MAX_LENGTH = 255
 
@@ -16,9 +18,6 @@ class User(models.Model):
         upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL), null=True)
     REQUIRED_FIELDS = []
     USERNAME_FIELD = 'phone'
-
-    blocked_users = models.ManyToManyField('self', related_name='blocked_me', symmetrical=False, through='BlackList',
-                                           through_fields=['user_from', 'user_to'])
 
     def __str__(self):
         return self.phone
@@ -39,10 +38,6 @@ class User(models.Model):
         """
         return True
 
-    @property
-    def blacklist(self):
-        return self.blocked_users.filter(inbound_blocks__active=True)
-
     def put_into_blacklist(self, user_ids):
         new_ids = set(user_ids) - {self.id}
         exists_ids = set(self.blocks.values_list('user_to_id', flat=True))
@@ -55,6 +50,48 @@ class User(models.Model):
     def remove_from_blacklist(self, user_ids):
         self.blocks.filter(user_to_id__in=user_ids).update(active=False)
 
+    def import_contacts(self, phones, names):
+        input_contacts = dict(zip(phones, names))
+        old_contacts = self.contacts.filter(phone__in=input_contacts.keys())
+        imported_contacts = []
+        for contact in old_contacts:
+            phone = contact.phone
+            contact.active = True
+            contact.name = input_contacts[phone]
+            input_contacts.pop(phone)
+            if contact.to_id is not None:
+                imported_contacts.append(contact.to_id)
+        registered_phones = dict(User.objects.filter(phone__in=input_contacts.keys()).values_list('phone', 'id'))
+        to_create = []
+        for phone, name in input_contacts.items():
+            to_id = registered_phones.get(phone, None)
+            c = Contact(owner=self, to_id=to_id, phone=phone, name=name)
+            to_create.append(c)
+            if to_id is not None:
+                imported_contacts.append(c.to_id)
+        with atomic():
+            bulk_update(old_contacts, update_fields=['name', 'active'])
+            Contact.objects.bulk_create(to_create)
+        return User.objects.filter(id__in=imported_contacts)
+
+    def delete_contacts(self, phones):
+        contacts = self.contacts.filter(phone__in=phones).distinct('phone')
+        for c in contacts:
+            c.active = False
+        bulk_update(contacts, update_fields=['active'])
+
+    def blocked_users(self, active=True):
+        return User.objects.filter(inbound_blocks__user_from=self, inbound_blocks__active=active)
+
+    def blocked_me(self, active=True):
+        return User.objects.filter(outbound_blocks__user_to=self, outbount_blocks__active=active)
+
+    def contacted_users(self, active=True):
+        return User.objects.filter(inbound_contacts__user_to=self, inbound_contacts__active=active)
+
+    def contacted_me(self, active=True):
+        return User.objects.filter(outbound_contacts__user_to=self, outbount_contacts__active=active)
+
 
 class BlackList(models.Model):
     user_from = models.ForeignKey('User', models.CASCADE, related_name='blocks')
@@ -63,3 +100,17 @@ class BlackList(models.Model):
 
     class Meta:
         unique_together = ['user_from', 'user_to']
+
+
+class Contact(models.Model):
+    owner = models.ForeignKey('users.User', models.CASCADE, related_name='contacts')
+    to = models.ForeignKey('users.User', models.SET_NULL, related_name='inbound_contacts', null=True)
+    phone = models.CharField(max_length=FIELD_MAX_LENGTH)
+    name = models.CharField(max_length=FIELD_MAX_LENGTH, null=True)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['owner', 'to']
+
+    def __str__(self):
+        return ' '.join([self.phone, str(self.owner_id)])
