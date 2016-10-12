@@ -161,18 +161,25 @@ class PhoneConfirmTests(APITestCase):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
         phone.create(code='00000')
-        r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': 'aa'})
+        with open('authentication/test_files/file1.png', 'rb') as f:
+            r = self.client.post(
+                self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 201)
         user_id = r.data['id']
         self.assertEqual(token_storage.authenticate(r.data['token']), user_id)
         self.assertEqual(User.objects.get(phone=phone_number).id, user_id)
 
 
+@override_settings(REDIS=REDIS_SETTINGS)
 class AuthTests(APITestCase):
     url = '/api/account/'
 
     def setUp(self):
         self.user = User.objects.create()
+        token_storage.delete_all()
+
+    def tearDown(self):
+        token_storage.delete_all()
 
     @classmethod
     def different_token(cls, token):

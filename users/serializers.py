@@ -37,14 +37,14 @@ class UserSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         viewer = self.context['viewer']
-        contacts = {c.to_id: c for c in viewer.contacts.filter(active=True)}
+        contacts = {c.user_to_id: c for c in viewer.contacts.filter(active=True)}
         self.context['contacts'] = contacts
-        # self.context['blocked_viewer'] = viewer.blocked_me.all()
+        self.context['blocked_viewer'] = viewer.blocked_me()
 
     def to_representation(self, instance):
         viewer = self.context['viewer']
         contact = self.context['contacts'].get(instance.id)
-        # blocked_viewer = self.context['blocked_viewer']
+        blocked_viewer = self.context['blocked_viewer']
         if contact:
             instance.name = contact.name
             data = super().to_representation(instance)
@@ -52,8 +52,8 @@ class UserSerializer(serializers.ModelSerializer):
             data = AccountSerializer(instance).data
         else:
             data = super().to_representation(instance)
-            # if instance.hidden_phone or instance in blocked_viewer:
-            #     del data['phone']
+            if instance.hidden_phone or instance in blocked_viewer:
+                del data['phone']
         return data
 
 

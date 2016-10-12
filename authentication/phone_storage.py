@@ -6,15 +6,22 @@ class PhoneDoesNotExist(Exception):
     pass
 
 
-conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                                 port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+conn_pool = None
+
+
+def get_redis():
+    global conn_pool
+    if conn_pool is None:
+        conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
+                                         port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+    return redis.StrictRedis(connection_pool=conn_pool)
 
 
 class Phone(object):
     PHONE_KEY = 'phone:{}'
 
     def __init__(self, phone):
-        self.r = redis.StrictRedis(connection_pool=conn_pool)
+        self.r = get_redis()
         self.phone = phone
         self.key = self.PHONE_KEY.format(phone)
 
@@ -46,5 +53,5 @@ class Phone(object):
 
 
 def delete_all():
-    r = redis.StrictRedis(connection_pool=conn_pool)
-    r.flushall()
+    r = get_redis()
+    r.flushdb()

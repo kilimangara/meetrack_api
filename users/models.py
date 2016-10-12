@@ -1,5 +1,4 @@
 from bulk_update.helper import bulk_update
-from bulk_update.manager import BulkUpdateManager
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.files.storage import FileSystemStorage
@@ -15,7 +14,7 @@ class User(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     hidden_phone = models.BooleanField(default=False)
     avatar = models.ImageField(
-        upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL), null=True)
+        upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
     REQUIRED_FIELDS = []
     USERNAME_FIELD = 'phone'
 
@@ -64,11 +63,11 @@ class User(models.Model):
         registered_phones = dict(User.objects.filter(phone__in=input_contacts.keys()).values_list('phone', 'id'))
         to_create = []
         for phone, name in input_contacts.items():
-            to_id = registered_phones.get(phone, None)
-            c = Contact(owner=self, to_id=to_id, phone=phone, name=name)
+            user_to_id = registered_phones.get(phone, None)
+            c = Contact(user_from=self, user_to_id=user_to_id, phone=phone, name=name)
             to_create.append(c)
-            if to_id is not None:
-                imported_contacts.append(c.to_id)
+            if user_to_id is not None:
+                imported_contacts.append(c.user_to_id)
         with atomic():
             bulk_update(old_contacts, update_fields=['name', 'active'])
             Contact.objects.bulk_create(to_create)
@@ -80,17 +79,29 @@ class User(models.Model):
             c.active = False
         bulk_update(contacts, update_fields=['active'])
 
-    def blocked_users(self, active=True):
-        return User.objects.filter(inbound_blocks__user_from=self, inbound_blocks__active=active)
+    def blocked_users(self, active_only=True):
+        qs = User.objects.filter(inbound_blocks__user_from=self).distinct('id')
+        if active_only:
+            qs = qs.filter(inbound_blocks__active=True)
+        return qs
 
-    def blocked_me(self, active=True):
-        return User.objects.filter(outbound_blocks__user_to=self, outbount_blocks__active=active)
+    def blocked_me(self, active_only=True):
+        qs = User.objects.filter(blocks__user_to=self).distinct('id')
+        if active_only:
+            qs = qs.filter(blocks__active=True)
+        return qs
 
-    def contacted_users(self, active=True):
-        return User.objects.filter(inbound_contacts__user_to=self, inbound_contacts__active=active)
+    def contacted_users(self, active_only=True):
+        qs = User.objects.filter(inbound_contacts__user_from=self).distinct('id')
+        if active_only:
+            qs = qs.filter(inbound_contacts__active=True)
+        return qs
 
-    def contacted_me(self, active=True):
-        return User.objects.filter(outbound_contacts__user_to=self, outbount_contacts__active=active)
+    def contacted_me(self, active_only=True):
+        qs = User.objects.filter(contacts__user_to=self).distinct('id')
+        if active_only:
+            qs = qs.filter(contacts__active=True)
+        return qs
 
 
 class BlackList(models.Model):
@@ -103,14 +114,14 @@ class BlackList(models.Model):
 
 
 class Contact(models.Model):
-    owner = models.ForeignKey('users.User', models.CASCADE, related_name='contacts')
-    to = models.ForeignKey('users.User', models.SET_NULL, related_name='inbound_contacts', null=True)
+    user_from = models.ForeignKey('users.User', models.CASCADE, related_name='contacts')
+    user_to = models.ForeignKey('users.User', models.SET_NULL, related_name='inbound_contacts', null=True)
     phone = models.CharField(max_length=FIELD_MAX_LENGTH)
     name = models.CharField(max_length=FIELD_MAX_LENGTH, null=True)
     active = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ['owner', 'to']
+        unique_together = ['user_from', 'user_to']
 
     def __str__(self):
-        return ' '.join([self.phone, str(self.owner_id)])
+        return ' '.join([self.phone, str(self.user_from_id)])

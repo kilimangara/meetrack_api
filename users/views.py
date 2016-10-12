@@ -61,7 +61,7 @@ def blacklist(request):
             user.put_into_blacklist(user_ids)
         else:
             user.remove_from_blacklist(user_ids)
-    serializer = UserSerializer(user.blocked_users.all(), context={'viewer': user}, many=True)
+    serializer = UserSerializer(user.blocked_users(), context={'viewer': user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
@@ -73,11 +73,13 @@ def contacts(request):
         serializer = ImportContactsSerializer(data=request.data, context={'user': user})
         if not serializer.is_valid():
             return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-        users = user.import_contacts(serializer.validated_data['phones'], serializer.validated_data['phones'])
+        users = user.import_contacts(serializer.validated_data['phones'], serializer.validated_data['names'])
     else:
         if request.method == 'DELETE':
             serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
             if not serializer.is_valid():
                 return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
             user.delete_contacts(serializer.validated_data['phones'])
-            # users=user.
+        users = user.contacted_users()
+    serializer = UserSerializer(users, context={'viewer': user}, many=True)
+    return Response(serializer.data, status.HTTP_200_OK)

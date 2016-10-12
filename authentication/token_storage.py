@@ -4,8 +4,7 @@ import os
 import redis
 from django.conf import settings
 
-conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                                 port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+conn_pool = None
 
 TOKEN_KEY = 'token:{}'
 USER_KEY = 'user:{}'
@@ -24,6 +23,11 @@ def generate_token():
 
 
 def get_redis():
+    global conn_pool
+    if conn_pool is None:
+        print(settings.REDIS)
+        conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
+                                         port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
     return redis.StrictRedis(connection_pool=conn_pool)
 
 
@@ -69,4 +73,4 @@ def create(user_id):
 
 def delete_all():
     r = get_redis()
-    r.flushall()
+    r.flushdb()
