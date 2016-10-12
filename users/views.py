@@ -43,10 +43,7 @@ def user_details(request, pk):
         user = User.objects.get(pk=pk)
     except User.DoesNotExist:
         raise NotFound()
-    if user != request.user:
-        serializer = UserSerializer(user, context={'viewer': request.user})
-    else:
-        serializer = AccountSerializer(user)
+    serializer = UserSerializer(user, context={'viewer': request.user})
     return Response(serializer.data, status.HTTP_200_OK)
 
 

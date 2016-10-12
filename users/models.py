@@ -45,19 +45,19 @@ class User(models.Model):
 
     def put_into_blacklist(self, user_ids):
         new_ids = set(user_ids) - {self.id}
-        exists_ids = set(self.outbound_blocks.values_list('user_to_id', flat=True))
+        exists_ids = set(self.blocks.values_list('user_to_id', flat=True))
         to_update = new_ids & exists_ids
         to_add = (BlackList(user_from=self, user_to_id=uid) for uid in (new_ids - to_update))
         with atomic():
-            self.outbound_blocks.filter(user_to_id__in=to_update).update(active=True)
-            self.outbound_blocks.bulk_create(to_add)
+            self.blocks.filter(user_to_id__in=to_update).update(active=True)
+            self.blocks.bulk_create(to_add)
 
     def remove_from_blacklist(self, user_ids):
-        self.outbound_blocks.filter(user_to_id__in=user_ids).update(active=False)
+        self.blocks.filter(user_to_id__in=user_ids).update(active=False)
 
 
 class BlackList(models.Model):
-    user_from = models.ForeignKey('User', models.CASCADE, related_name='outbound_blocks')
+    user_from = models.ForeignKey('User', models.CASCADE, related_name='blocks')
     user_to = models.ForeignKey('User', models.CASCADE, related_name='inbound_blocks')
     active = models.BooleanField(default=True)
 
