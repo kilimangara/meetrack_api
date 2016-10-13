@@ -29,6 +29,18 @@ class UserIdsSerializer(serializers.Serializer):
         return User.objects.filter(id__in=ids).values_list('id', flat=True)
 
 
+class UserIdSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+
+    def validate_user_id(self, value):
+        viewer = self.context['viewer']
+        if viewer.id == value:
+            raise ValidationError("Can not block yourself.")
+        elif not User.objects.filter(id=value):
+            raise ValidationError("User with this id does not exist.")
+        return value
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

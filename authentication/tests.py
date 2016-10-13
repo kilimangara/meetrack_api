@@ -18,6 +18,7 @@ REDIS_SETTINGS['DB'] += 1
 @override_settings(REDIS=REDIS_SETTINGS, TEST_SMS=True)
 class CodeSendingTests(APITestCase):
     url = '/api/auth/code/'
+    phone_storage.connect()
 
     def setUp(self):
         phone_storage.delete_all()
@@ -71,6 +72,8 @@ class CodeSendingTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class PhoneConfirmTests(APITestCase):
     url = '/api/auth/user/'
+    phone_storage.connect()
+    token_storage.connect()
 
     def setUp(self):
         phone_storage.delete_all()
@@ -173,6 +176,7 @@ class PhoneConfirmTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class AuthTests(APITestCase):
     url = '/api/account/'
+    token_storage.connect()
 
     def setUp(self):
         self.user = User.objects.create()

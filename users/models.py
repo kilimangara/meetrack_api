@@ -37,17 +37,14 @@ class User(models.Model):
         """
         return True
 
-    def put_into_blacklist(self, user_ids):
-        new_ids = set(user_ids) - {self.id}
-        exists_ids = set(self.blocks.values_list('user_to_id', flat=True))
-        to_update = new_ids & exists_ids
-        to_add = (BlackList(user_from=self, user_to_id=uid) for uid in (new_ids - to_update))
-        with atomic():
-            self.blocks.filter(user_to_id__in=to_update).update(active=True)
-            self.blocks.bulk_create(to_add)
+    def put_into_blacklist(self, user_id):
+        if self.blocks.filter(user_to_id=user_id).exists():
+            self.blocks.filter(user_to_id=user_id).update(active=True)
+        else:
+            self.blocks.create(user_to_id=user_id)
 
-    def remove_from_blacklist(self, user_ids):
-        self.blocks.filter(user_to_id__in=user_ids).update(active=False)
+    def remove_from_blacklist(self, user_id):
+        self.blocks.filter(user_to_id=user_id).update(active=False)
 
     def import_contacts(self, phones, names):
         input_contacts = dict(zip(phones, names))

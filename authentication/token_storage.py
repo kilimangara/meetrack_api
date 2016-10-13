@@ -22,12 +22,13 @@ def generate_token():
     return binascii.hexlify(os.urandom(20)).decode()
 
 
-def get_redis():
+def connect():
     global conn_pool
-    if conn_pool is None:
-        print(settings.REDIS)
-        conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                                         port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+    conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
+                                     port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+
+
+def get_redis():
     return redis.StrictRedis(connection_pool=conn_pool)
 
 
@@ -74,3 +75,6 @@ def create(user_id):
 def delete_all():
     r = get_redis()
     r.flushdb()
+
+
+connect()
