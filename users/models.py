@@ -3,6 +3,9 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.files.storage import FileSystemStorage
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 from django.db.transaction import atomic
 
 FIELD_MAX_LENGTH = 255
@@ -55,8 +58,8 @@ class User(models.Model):
             contact.active = True
             contact.name = input_contacts[phone]
             input_contacts.pop(phone)
-            if contact.to_id is not None:
-                imported_contacts.append(contact.to_id)
+            if contact.user_to_id is not None:
+                imported_contacts.append(contact.user_to_id)
         registered_phones = dict(User.objects.filter(phone__in=input_contacts.keys()).values_list('phone', 'id'))
         to_create = []
         for phone, name in input_contacts.items():
@@ -108,6 +111,13 @@ class BlackList(models.Model):
 
     class Meta:
         unique_together = ['user_from', 'user_to']
+
+
+@receiver(post_save, sender=User)
+def new_registered_user(instance, created, **kwargs):
+    if not created:
+        return
+    Contact.objects.filter(phone=instance.phone).update(user_to=instance)
 
 
 class Contact(models.Model):

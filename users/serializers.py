@@ -74,22 +74,21 @@ class ImportContactsSerializer(serializers.Serializer):
     names = serializers.ListField(child=serializers.CharField(max_length=FIELD_MAX_LENGTH), allow_empty=False,
                                   write_only=True)
 
-    @classmethod
-    def validate_phones(cls, value):
+    def validate_phones(self, value):
         phones = value
-        phones_unique = list(OrderedDict.fromkeys(phones))
+        phones_unique = OrderedDict.fromkeys(phones)
+        user = self.context['user']
         if len(phones_unique) != len(phones):
             raise ValidationError("Phone list contains duplicates.")
-        return phones_unique
+        elif user.phone in phones:
+            raise ValidationError("The phones list contains user phone.")
+        return list(phones_unique)
 
     def validate(self, attrs):
         names = attrs['names']
         phones = attrs['phones']
-        user = self.context['user']
         if len(names) != len(phones):
             raise ValidationError("The number of phones must be equal to the number of names.")
-        if user.phone in phones:
-            raise ValidationError("The phones list contains user phone.")
         return attrs
 
 
