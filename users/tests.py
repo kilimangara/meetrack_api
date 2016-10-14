@@ -202,13 +202,72 @@ class ContactsImportTests(APITestCase):
 
 
 @override_settings(REDIS=REDIS_SETTINGS)
-class ContactsImportTests(APITestCase):
+class ContactsDeleteTests(APITestCase):
     url = '/api/contacts/'
     token_storage.connect()
 
+    def test_success(self):
+        u = User.objects.create(phone='+79250741413')
+        token = token_storage.create(u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+        u2 = User.objects.create(phone='+79250741414')
+        u3 = User.objects.create(phone='+79250741412')
+        u.contacts.create(user_to=u2, phone=u2.phone)
+        u.contacts.create(user_to=u3, phone=u3.phone)
+        phones = ['+79250741413', u3.phone, '+79250741416']
+        r = self.client.delete(self.url, {'phones': phones})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data), 1)
+        self.assertEqual(r.data[0]['id'], u2.id)
+        self.assertIn(u2, u.contacted_users())
+        self.assertNotIn(u3, u.contacted_users())
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class UserRepresentationTests(APITestCase):
+    url = '/api/users/{}/'
+    token_storage.connect()
+
     def setUp(self):
-        self.u = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.u.id)
+        self.viewer = User.objects.create(phone='+79250741413')
+        self.token = token_storage.create(self.viewer.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
-        self.u2 = User.objects.create(phone='+79250741414')
-        self.u3 = User.objects.create(phone='+79250741412')
+        self.u = User.objects.create(phone='+79250741414', name='hello')
+
+    def test_hidden_and_contact(self):
+        self.u.hidden_phone = True
+        self.u.save()
+        self.viewer.add_to_contacts(self.u.phone, 'world')
+        r = self.client.get(self.url.format(self.u.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['name'], 'world')
+        self.assertEqual(r.data['phone'], '+79250741414')
+
+    def test_blocked_and_contact(self):
+        self.u.add_to_blacklist(self.viewer.id)
+        self.viewer.add_to_contacts(self.u.phone, 'world')
+        r = self.client.get(self.url.format(self.u.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['name'], 'world')
+        self.assertEqual(r.data['phone'], '+79250741414')
+
+    def test_blocked(self):
+        self.u.add_to_blacklist(self.viewer.id)
+        r = self.client.get(self.url.format(self.u.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['name'], 'hello')
+        self.assertNotIn('phone', r.data)
+
+    def test_hidden(self):
+        self.u.hidden_phone = True
+        self.u.save()
+        r = self.client.get(self.url.format(self.u.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['name'], 'hello')
+        self.assertNotIn('phone', r.data)
+
+    def test_simple(self):
+        r = self.client.get(self.url.format(self.u.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['name'], 'hello')
+        self.assertEqual(r.data['phone'], '+79250741414')

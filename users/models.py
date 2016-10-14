@@ -4,9 +4,8 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django.db.models.signals import post_save
-from django.dispatch import receiver
-
 from django.db.transaction import atomic
+from django.dispatch import receiver
 
 FIELD_MAX_LENGTH = 255
 
@@ -40,7 +39,7 @@ class User(models.Model):
         """
         return True
 
-    def put_into_blacklist(self, user_id):
+    def add_to_blacklist(self, user_id):
         if self.blocks.filter(user_to_id=user_id).exists():
             self.blocks.filter(user_to_id=user_id).update(active=True)
         else:
@@ -49,8 +48,12 @@ class User(models.Model):
     def remove_from_blacklist(self, user_id):
         self.blocks.filter(user_to_id=user_id).update(active=False)
 
-    def import_contacts(self, phones, names):
-        input_contacts = dict(zip(phones, names))
+    def add_to_contacts(self, phones, names):
+        if isinstance(phones, str):
+            # if single contact
+            input_contacts = {phones: names}
+        else:
+            input_contacts = dict(zip(phones, names))
         old_contacts = self.contacts.filter(phone__in=input_contacts.keys())
         imported_contacts = []
         for contact in old_contacts:
@@ -73,11 +76,8 @@ class User(models.Model):
             Contact.objects.bulk_create(to_create)
         return User.objects.filter(id__in=imported_contacts)
 
-    def delete_contacts(self, phones):
-        contacts = self.contacts.filter(phone__in=phones).distinct('phone')
-        for c in contacts:
-            c.active = False
-        bulk_update(contacts, update_fields=['active'])
+    def remove_from_contacts(self, phones):
+        self.contacts.filter(phone__in=phones).distinct('phone').update(active=False)
 
     def blocked_users(self, active_only=True):
         qs = User.objects.filter(inbound_blocks__user_from=self).distinct('id')

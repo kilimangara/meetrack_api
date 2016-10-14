@@ -164,13 +164,20 @@ class PhoneConfirmTests(APITestCase):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
         phone.create(code='00000')
+        u1 = User.objects.create(phone='+79250741414')
+        u2 = User.objects.create(phone='+79250741412')
+        u1.add_to_contacts('+79250741413', 'hello')
+        u2.add_to_contacts('+79250741413', 'world')
         with open('authentication/test_files/file1.png', 'rb') as f:
             r = self.client.post(
                 self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 201)
         user_id = r.data['id']
         self.assertEqual(token_storage.authenticate(r.data['token']), user_id)
-        self.assertEqual(User.objects.get(phone=phone_number).id, user_id)
+        u = User.objects.get(phone=phone_number)
+        self.assertEqual(u.id, user_id)
+        self.assertIn(u, u1.contacted_users())
+        self.assertIn(u, u2.contacted_users())
 
 
 @override_settings(REDIS=REDIS_SETTINGS)
