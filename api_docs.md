@@ -12,16 +12,23 @@
     None
     
 * **Data Params:**
+
     phone: [string]
      
 * **Success Response:**
+
     **Code 201:**
+    
     **Content:** `{ is_new: true }`
  
 * **Error Response:**
+
     **Code 400:**
+    
     **Content:** `{phone: ["Invalid phone number."]}`
+    
     **Code 429:**
+    
     **Content:** `{detail: "Request was throttled."}`
     
     
@@ -39,20 +46,30 @@
     None
     
 * **Data Params:**
+
     phone: [string]
+    
     code: [alphanumeric]
      
 * **Success Response:**
+
     **Code 201:**
+    
     **Content:** `{ user_id: 1, token: "sadfsdfw22342342dfgaa" }`
  
 * **Error Response:**
+
     **Code 400:**
+    
     **Content:** `{code: ["Code is invalid."],
                   phone: ["Invalid phone number."]}`
+                  
     **Code 404:**
+    
     **Content:** `{detail: "Not found."}`
+    
     **Code 429:** 
+    
     **Content:** `{detail: "Request was throttled."}`
     
 
@@ -70,23 +87,34 @@
     None
     
 * **Data Params:**
+
     phone: [string]
+    
     code: [alphanumeric]
+    
     is_new: true
+    
     name: [string]
+    
     avatar: [file]
      
 * **Success Response:**
+
     **Code 201:**
+    
     **Content:** `{ user_id: 1, token: "sadfsdfw22342342dfgaa" }`
  
 * **Error Response:**
-    **Code 400:**
+
+    **Code 400:** 
+    
     **Content:** `{code: ["Code is invalid."],
                   phone: ["Invalid phone number.", "user with this phone already exists."],
                   name: ["This field is required."],
                   avatar: ["This field is required."]}`
+                  
     **Code 429:** 
+    
     **Content:** `{detail: "Request was throttled."}`
                   
                   
@@ -110,7 +138,9 @@
     None
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `{id: 1, name: "fff", 
                    phone: "+79250741413",
                    created: "2222333",
@@ -118,7 +148,9 @@
                    avatar: "http://localhost:8000/path.png"}`
  
 * **Error Response:**
+
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -139,13 +171,19 @@
     None
     
 * **Data Params:**
+
     **Optional:**
+    
     name: [string]
+    
     hidden_phone: [bool]
+    
     avatar: [file]
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `{id: 1, name: "fff", 
                    phone: "+79250741413",
                    created: "2222333",
@@ -153,9 +191,13 @@
                    avatar: "http://localhost:8000/path.png"}`
  
 * **Error Response:**
+
     **Code 400:** 
+    
     **Content:** `{avatar: ["some error"], name: ["some error"]}`
+    
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -173,13 +215,16 @@
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
+
    user_ids: [array]
     
 * **Data Params:**
   None
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -196,9 +241,13 @@
     ]`
  
 * **Error Response:**
+
     **Code 400:** 
+    
     **Content:** `{user_ids: ["some error"]}`
+    
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -222,7 +271,9 @@
   None
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
         {
             id: 1, 
@@ -232,9 +283,13 @@
         }`
  
 * **Error Response:**
+
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
+    
     **Code 404:** 
+    
     **Content:** `{detail: "Not found."}`
     
     
@@ -258,7 +313,9 @@
   None
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -275,7 +332,9 @@
     ]`
  
 * **Error Response:**
+
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -296,10 +355,13 @@
     None
     
 * **Data Params:**
+
     user_id: [integer]
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -316,9 +378,13 @@
     ]`
  
 * **Error Response:**
+
     **Code 400:**
+    
     **Content:** `{user_id: ["User with this id does not exist.", "Can not do it with yourself."]}`
+    
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -339,10 +405,13 @@
     None
     
 * **Data Params:**
+
     user_id: [integer]
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -359,9 +428,13 @@
     ]`
  
 * **Error Response:**
+
     **Code 400:**
+    
     **Content:** `{user_id: ["User with this id does not exist.", "Can not do it with yourself."]}`
+    
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -385,7 +458,9 @@
     None
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -403,7 +478,9 @@
     ]`
  
 * **Error Response:**
+
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -424,12 +501,17 @@
     None
     
 * **Data Params:**
+
     names: [array]
+    
     phones: [array]
+    
     the first name and the first phone from the lists form a first contact and so on.
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -447,10 +529,14 @@
     ]`
  
 * **Error Response:**
+
     **Code 400:**
+    
     **Content:** `{phones: ["Phone list contains duplicates.", "The phones list contains user phone."],
                    non_field_errors: ["The number of phones must be equal to the number of names."]}`
+                   
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
     
     
@@ -471,10 +557,13 @@
     None
     
 * **Data Params:**
+
     phones: [array]
      
 * **Success Response:**
+
     **Code 200:**
+    
     **Content:** `
     [
         {
@@ -492,7 +581,11 @@
     ]`
  
 * **Error Response:**
+
     **Code 400:**
+    
     **Content:** `{phones: ["some error]}`
+    
     **Code 401:** 
+    
     **Content:** `{detail: "Invalid token."}`
