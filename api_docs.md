@@ -266,8 +266,8 @@
     **Content:** 
     ```javascript
     {
-      avatar: ["some error"], 
-      name: ["some error"]
+      avatar: ["Upload a valid image. The file you uploaded was either not an image or a corrupted image."], 
+      name: ["This field may not be blank"]
     }
     ```
     
@@ -329,7 +329,7 @@
     **Content:** 
     ```javascript
     {
-      user_ids: ["some error"]
+      user_ids: ["This list may not be empty", "A valid integer is required."]
     }
     ```
     
@@ -354,6 +354,7 @@
   `GET`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -408,6 +409,7 @@
   `GET`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -460,6 +462,7 @@
   `PUT`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -523,6 +526,7 @@
   `DELETE`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -585,6 +589,7 @@
   `GET`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -638,6 +643,7 @@
   `PUT`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -706,6 +712,7 @@
   `DELETE`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -744,7 +751,7 @@
     **Content:** 
     ```javascript
     {
-      phones: ["some error]
+      phones: ["Invalid phone number.", "This list may not be empty."]
     }
     ```
     
