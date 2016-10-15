@@ -181,6 +181,7 @@
   `GET`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -228,6 +229,7 @@
   `PATCH`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
@@ -292,6 +294,7 @@
   `GET`
   
 *  **Headers:** 
+
    Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
    
 *  **URL Params:**
