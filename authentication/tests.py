@@ -15,7 +15,7 @@ REDIS_SETTINGS = settings.REDIS
 REDIS_SETTINGS['DB'] += 1
 
 
-@override_settings(REDIS=REDIS_SETTINGS, TEST_SMS=True)
+@override_settings(REDIS=REDIS_SETTINGS)
 class CodeSendingTests(APITestCase):
     url = '/api/auth/code/'
     phone_storage.connect()
@@ -71,7 +71,7 @@ class CodeSendingTests(APITestCase):
 
 @override_settings(REDIS=REDIS_SETTINGS)
 class PhoneConfirmTests(APITestCase):
-    url = '/api/auth/user/'
+    url = '/api/auth/users/'
     phone_storage.connect()
     token_storage.connect()
 
@@ -122,7 +122,7 @@ class PhoneConfirmTests(APITestCase):
         u = User.objects.create(phone=phone_number)
         token = token_storage.create(u.id)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 201)
         self.assertNotEqual(r.data['token'], token)
         self.assertEqual(r.data['user_id'], u.id)
 
@@ -132,7 +132,7 @@ class PhoneConfirmTests(APITestCase):
         phone.create(code='00000')
         u = User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 201)
         self.assertEqual(token_storage.authenticate(r.data['token']), u.id)
         self.assertEqual(r.data['user_id'], u.id)
 
@@ -172,7 +172,7 @@ class PhoneConfirmTests(APITestCase):
             r = self.client.post(
                 self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 201)
-        user_id = r.data['id']
+        user_id = r.data['user_id']
         self.assertEqual(token_storage.authenticate(r.data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)

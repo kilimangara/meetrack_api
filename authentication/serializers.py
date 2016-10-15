@@ -10,7 +10,6 @@ from phonenumbers.phonenumberutil import NumberParseException
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, Throttled
 
-from . import token_storage
 from .phone_storage import Phone, PhoneDoesNotExist
 
 User = get_user_model()
@@ -18,7 +17,7 @@ User = get_user_model()
 
 class PhoneNumberField(serializers.CharField):
     default_error_messages = {
-        'invalid': _('Invalid phone number.'),
+        'invalid': _("Invalid phone number."),
     }
 
     def to_internal_value(self, data):
@@ -92,17 +91,6 @@ class ConfirmPhoneSerializer(SendPhoneSerializer):
 
 
 class NewUserSerializer(serializers.ModelSerializer):
-    token = serializers.SerializerMethodField()
-
-    def get_token(self, obj):
-        return self.validated_data['token_value']
-
-    def create(self, validated_data):
-        user = super().create(validated_data)
-        self.validated_data['token_value'] = token_storage.create(user.id)
-        return user
-
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'created', 'token', 'avatar']
-        read_only_fields = ['created', 'token']
+        fields = ['name', 'phone', 'avatar']

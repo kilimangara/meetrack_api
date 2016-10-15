@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .serializers import AccountSerializer, UserSerializer
-from .serializers import ImportContactsSerializer, DeleteContactsSerializer, UserIdsSerializer, UserIdSerializer
+from .serializers import ImportContactsSerializer, DeleteContactsSerializer, UserIdsSerializer, ForeignUserIdSerializer
 
 User = get_user_model()
 
@@ -53,7 +53,7 @@ def user_details(request, pk):
 def blacklist(request):
     user = request.user
     if request.method != 'GET':
-        id_serializer = UserIdSerializer(data=request.data, context={'viewer': user})
+        id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
         if not id_serializer.is_valid():
             return Response(id_serializer.errors, status.HTTP_400_BAD_REQUEST)
         user_id = id_serializer.validated_data['user_id']

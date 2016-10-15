@@ -29,13 +29,13 @@ class UserIdsSerializer(serializers.Serializer):
         return User.objects.filter(id__in=ids).values_list('id', flat=True)
 
 
-class UserIdSerializer(serializers.Serializer):
+class ForeignUserIdSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
 
     def validate_user_id(self, value):
         viewer = self.context['viewer']
         if viewer.id == value:
-            raise ValidationError("Can not block yourself.")
+            raise ValidationError("Can not do it with yourself.")
         elif not User.objects.filter(id=value):
             raise ValidationError("User with this id does not exist.")
         return value
