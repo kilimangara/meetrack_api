@@ -1,6 +1,6 @@
 **Send code**
 ----
-  Sends sms with secure code and checks whether the maximum number of attempts has been exceeded. Code expires after some time, now five minutes. Returns whether the user with this phone number is registered.
+  Sends sms with secure code and checks whether the maximum number of attempts has been exceeded. Code expires after some time, now five minutes. Returns whether the user with this phone number is registered. This method does not create a user.
 
 * **URL:**
   /api/auth/code/
@@ -14,6 +14,9 @@
 * **Data Params:**
 
     phone: [string]
+    
+    phone number must start with '+'
+ 
      
 * **Success Response:**
 
