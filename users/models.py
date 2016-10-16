@@ -2,8 +2,9 @@ from bulk_update.helper import bulk_update
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.files.storage import FileSystemStorage
+from authentication import token_storage
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.db.transaction import atomic
 from django.dispatch import receiver
 
@@ -118,6 +119,11 @@ def new_registered_user(instance, created, **kwargs):
     if not created:
         return
     Contact.objects.filter(phone=instance.phone).update(user_to=instance)
+
+
+@receiver(pre_delete, sender=User)
+def delete_user(instance, **kwargs):
+    token_storage.delete(instance.id)
 
 
 class Contact(models.Model):

@@ -17,7 +17,6 @@ def send_code(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
     serializer.save_code()
-    print('save')
     if not hasattr(settings, 'TEST_SMS'):
         serializer.send_code()
     phone = serializer.validated_data['phone']

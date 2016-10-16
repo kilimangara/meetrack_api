@@ -271,3 +271,24 @@ class UserRepresentationTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data['name'], 'hello')
         self.assertEqual(r.data['phone'], '+79250741414')
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class AccountTests(APITestCase):
+    url = '/api/account/'
+    token_storage.connect()
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414', name='hello')
+        self.token = token_storage.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+
+    def test_delete(self):
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 204)
+        with self.assertRaises(token_storage.AuthenticationFailed):
+            token_storage.authenticate(self.token)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 401)
