@@ -5,8 +5,8 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
+from authtoken import tokens
 from . import phone_storage
-from . import token_storage
 from .phone_storage import Phone
 
 User = get_user_model()
@@ -44,23 +44,6 @@ class CodeSendingTests(APITestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn('phone', r.data)
 
-    def test_incorrect(self):
-        r = self.client.post(self.url, {'phone': '+9250741413'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
-        r = self.client.post(self.url, {'phone': '+792507414134'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
-        r = self.client.post(self.url, {'phone': '+7250741413'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
-        r = self.client.post(self.url, {'phone': '79250741413'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
-        r = self.client.post(self.url, {'phone': '89250741413'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
-
     def test_limit_exceeded(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
@@ -73,15 +56,15 @@ class CodeSendingTests(APITestCase):
 class PhoneConfirmTests(APITestCase):
     url = '/api/auth/users/'
     phone_storage.connect()
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         phone_storage.delete_all()
-        token_storage.delete_all()
+        tokens.delete_all()
 
     def tearDown(self):
         phone_storage.delete_all()
-        token_storage.delete_all()
+        tokens.delete_all()
 
     def test_no_phone(self):
         r = self.client.post(self.url, {'phone': '', 'code': 228, 'is_new': False})
@@ -127,7 +110,7 @@ class PhoneConfirmTests(APITestCase):
         phone = Phone(phone_number)
         phone.set_code(code='00000')
         u = User.objects.create(phone=phone_number)
-        token = token_storage.create(u.id)
+        token = tokens.create(u.id)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 201)
         self.assertNotEqual(r.data['token'], token)
@@ -140,7 +123,7 @@ class PhoneConfirmTests(APITestCase):
         u = User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(token_storage.authenticate(r.data['token']), u.id)
+        self.assertEqual(tokens.authenticate(r.data['token']), u.id)
         self.assertEqual(r.data['user_id'], u.id)
 
     def test_sign_in_user_not_exists(self):
@@ -175,60 +158,13 @@ class PhoneConfirmTests(APITestCase):
         u2 = User.objects.create(phone='+79250741412')
         u1.add_to_contacts('+79250741413', 'hello')
         u2.add_to_contacts('+79250741413', 'world')
-        with open('authentication/test_files/file1.png', 'rb') as f:
+        with open('registration/test_files/file1.png', 'rb') as f:
             r = self.client.post(
                 self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 201)
         user_id = r.data['user_id']
-        self.assertEqual(token_storage.authenticate(r.data['token']), user_id)
+        self.assertEqual(tokens.authenticate(r.data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)
         self.assertIn(u, u1.contacted_users())
         self.assertIn(u, u2.contacted_users())
-
-
-@override_settings(REDIS=REDIS_SETTINGS)
-class AuthTests(APITestCase):
-    url = '/api/account/'
-    token_storage.connect()
-
-    def setUp(self):
-        self.user = User.objects.create()
-        token_storage.delete_all()
-
-    def tearDown(self):
-        token_storage.delete_all()
-
-    @classmethod
-    def different_token(cls, token):
-        if token[0] == 'a':
-            token = 'b' + token[1:]
-        else:
-            token = 'a' + token[1:]
-        return token
-
-    def test_incorrect_creds(self):
-        token = token_storage.create(self.user.id)
-        incorrect_token = self.different_token(token)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + incorrect_token)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, 401)
-
-    def test_correct_creds(self):
-        token = token_storage.create(self.user.id)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, 200)
-
-    def test_retry_token(self):
-        old_token = token_storage.create(self.user.id)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + old_token)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, 200)
-        new_token = token_storage.create(self.user.id)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + new_token)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, 200)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + old_token)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, 401)

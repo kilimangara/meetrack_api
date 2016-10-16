@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions
 from rest_framework.authentication import TokenAuthentication
 
-from . import token_storage
+from . import tokens
 
 
 class RedisTokenAuthentication(TokenAuthentication):
@@ -11,8 +11,8 @@ class RedisTokenAuthentication(TokenAuthentication):
 
     def authenticate_credentials(self, key):
         try:
-            user_id = token_storage.authenticate(key)
+            user_id = tokens.authenticate(key)
             user = self.User.objects.get(pk=user_id)
-        except (token_storage.AuthenticationFailed, self.User.DoesNotExist):
+        except (tokens.AuthenticationFailed, self.User.DoesNotExist):
             raise exceptions.AuthenticationFailed(_('Invalid token.'))
         return user, key

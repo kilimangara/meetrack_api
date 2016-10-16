@@ -17,7 +17,7 @@ from django.conf.urls import url, include, static
 from django.conf import settings
 
 urlpatterns = [
-    url(r'^api/auth/', include('authentication.urls')),
+    url(r'^api/auth/', include('registration.urls')),
     url(r'^api/', include('users.urls')),
 ]
 if settings.DEBUG:

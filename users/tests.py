@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
-from authentication import token_storage
+from authtoken import tokens
 
 User = get_user_model()
 
@@ -14,11 +14,11 @@ REDIS_SETTINGS['DB'] += 1
 @override_settings(REDIS=REDIS_SETTINGS)
 class BlacklistGetTests(APITestCase):
     url = '/api/blacklist/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.u.id)
+        self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
 
     def test_empty(self):
@@ -40,11 +40,11 @@ class BlacklistGetTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class BlacklistAddTests(APITestCase):
     url = '/api/blacklist/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.u.id)
+        self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.u2 = User.objects.create(phone='+79250741412')
 
@@ -77,11 +77,11 @@ class BlacklistAddTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class BlackListDeleteTests(APITestCase):
     url = '/api/blacklist/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.u.id)
+        self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.u2 = User.objects.create(phone='+79250741412')
         self.u3 = User.objects.create(phone='+79250741415')
@@ -110,11 +110,11 @@ class BlackListDeleteTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class ContactsGetTests(APITestCase):
     url = '/api/contacts/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.u.id)
+        self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
 
     def test_empty(self):
@@ -136,11 +136,11 @@ class ContactsGetTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class ContactsImportTests(APITestCase):
     url = '/api/contacts/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.u.id)
+        self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.u2 = User.objects.create(phone='+79250741414')
         self.u3 = User.objects.create(phone='+79250741412')
@@ -204,11 +204,11 @@ class ContactsImportTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class ContactsDeleteTests(APITestCase):
     url = '/api/contacts/'
-    token_storage.connect()
+    tokens.connect()
 
     def test_success(self):
         u = User.objects.create(phone='+79250741413')
-        token = token_storage.create(u.id)
+        token = tokens.create(u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
         u2 = User.objects.create(phone='+79250741414')
         u3 = User.objects.create(phone='+79250741412')
@@ -226,11 +226,11 @@ class ContactsDeleteTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class UserRepresentationTests(APITestCase):
     url = '/api/users/{}/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.viewer = User.objects.create(phone='+79250741413')
-        self.token = token_storage.create(self.viewer.id)
+        self.token = tokens.create(self.viewer.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.u = User.objects.create(phone='+79250741414', name='hello')
 
@@ -276,11 +276,11 @@ class UserRepresentationTests(APITestCase):
 @override_settings(REDIS=REDIS_SETTINGS)
 class AccountTests(APITestCase):
     url = '/api/account/'
-    token_storage.connect()
+    tokens.connect()
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414', name='hello')
-        self.token = token_storage.create(self.u.id)
+        self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
 
     def test_delete(self):
@@ -288,7 +288,7 @@ class AccountTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         r = self.client.delete(self.url)
         self.assertEqual(r.status_code, 204)
-        with self.assertRaises(token_storage.AuthenticationFailed):
-            token_storage.authenticate(self.token)
+        with self.assertRaises(tokens.AuthenticationFailed):
+            tokens.authenticate(self.token)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 401)

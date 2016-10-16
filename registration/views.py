@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from . import token_storage
+from authtoken import tokens
 from .serializers import SendPhoneSerializer, ConfirmPhoneSerializer, NewUserSerializer
 
 User = get_user_model()
@@ -40,5 +40,5 @@ def login(request):
         if not user_serializer.is_valid():
             return Response(user_serializer.errors, status.HTTP_400_BAD_REQUEST)
         user_id = user_serializer.save().id
-    token = token_storage.create(user_id)
+    token = tokens.create(user_id)
     return Response({'token': token, 'user_id': user_id}, status.HTTP_201_CREATED)

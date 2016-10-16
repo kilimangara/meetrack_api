@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'users',
-    'authentication',
+    'phonenumber_field',
+    'registration',
 ]
 AUTH_USER_MODEL = 'users.User'
 
@@ -148,7 +149,7 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'authentication.auth.RedisTokenAuthentication'
+        'registration.auth.RedisTokenAuthentication'
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
