@@ -61,7 +61,8 @@ class SendPhoneSerializer(serializers.Serializer):
         if code is None:
             code = self.generate_code()
         phone = Phone(self.validated_data['phone'])
-        phone.create(code, time=settings.SMS_AUTH['LIFE_TIME'])
+        phone.set_code(code, time=settings.SMS_AUTH['CODE_LIFE_TIME'])
+        phone.increment_attempts(time=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
         self.validated_data['code'] = code
         return code
 
@@ -78,13 +79,14 @@ class ConfirmPhoneSerializer(SendPhoneSerializer):
             return attrs
         phone = Phone(phone_number)
         try:
-            real_code, count = phone.get()
+            real_code = phone.get_code()
         except PhoneDoesNotExist:
             raise self.validation_error
+        count = phone.get_attempts()
         if count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
             raise Throttled()
         if code != real_code:
-            phone.set_attempts(attempts=count + 1)
+            phone.increment_attempts(time=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
             raise self.validation_error
         phone.delete()
         return attrs

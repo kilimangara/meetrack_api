@@ -11,7 +11,7 @@ from .serializers import ImportContactsSerializer, DeleteContactsSerializer, Use
 User = get_user_model()
 
 
-@api_view(['PATCH', 'GET'])
+@api_view(['PATCH', 'GET', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def account(request):
     user = request.user
@@ -24,6 +24,9 @@ def account(request):
             return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
         serializer.save()
         return Response(serializer.data, status.HTTP_200_OK)
+    elif request.method == 'DELETE':
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])

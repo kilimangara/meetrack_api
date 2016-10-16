@@ -19,38 +19,48 @@ def connect():
 
 
 class Phone(object):
-    PHONE_KEY = 'phone:{}'
+    CODE_KEY = 'phone:{}:code'
+    ATTEMPTS_KEY = 'phone:{}:attempts'
 
     def __init__(self, phone):
         self.r = get_redis()
         self.phone = phone
-        self.key = self.PHONE_KEY.format(phone)
+        self.code_key = self.CODE_KEY.format(phone)
+        self.attempts_key = self.ATTEMPTS_KEY.format(phone)
 
     def get_attempts(self):
-        return int(self.r.hget(self.key, 'attempts') or 0)
+        return int(self.r.get(self.attempts_key) or 0)
 
-    def get(self):
-        code, attempts = self.r.hmget(self.key, ['code', 'attempts'])
-        if code is None or attempts is None:
+    def set_attempts(self, attempts, time=None):
+        pipe = self.r.pipeline()
+        pipe.set(self.attempts_key, attempts)
+        if time is not None:
+            pipe.expire(self.attempts_key, time)
+        pipe.execute()
+
+    def increment_attempts(self, time=None):
+        count = self.get_attempts()
+        if not count:
+            self.set_attempts(1, time)
+        else:
+            self.r.incr(self.attempts_key)
+        return count + 1
+
+    def get_code(self):
+        code = self.r.get(self.code_key)
+        if not code:
             raise PhoneDoesNotExist()
-        code = code.decode()
-        attempts = int(attempts)
-        return code, attempts
+        return code.decode()
+
+    def set_code(self, code, time=None):
+        pipe = self.r.pipeline()
+        pipe.set(self.code_key, code)
+        if time is not None:
+            pipe.expire(self.code_key, time)
+        pipe.execute()
 
     def delete(self):
-        self.r.delete(self.key)
-
-    def set_attempts(self, attempts):
-        self.r.hset(self.key, 'attempts', attempts)
-
-    def create(self, code, attempts=None, time=None):
-        pipe = self.r.pipeline()
-        if attempts is None:
-            attempts = self.get_attempts() + 1
-        pipe.hmset(self.key, {'code': code, 'attempts': attempts})
-        if time is not None:
-            pipe.pexpire(self.key, time)
-        pipe.execute()
+        self.r.delete(self.code_key, self.attempts_key)
 
 
 def delete_all():

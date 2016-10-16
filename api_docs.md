@@ -1,6 +1,6 @@
 **Send code**
 ----
-  Sends sms with secure code and checks whether the limit has been exceeded. Returns whether the user with this phone number is registered.
+  Sends sms with secure code and checks whether the maximum number of attempts has been exceeded. Code expires after some time, now five minutes. Returns whether the user with this phone number is registered.
 
 * **URL:**
   /api/auth/code/
@@ -20,11 +20,11 @@
     **Code 201:**
     
     **Content:** 
-  ```javascript
-  { 
-    is_new: true
-  }
-  ```
+    ```javascript
+    {
+      is_new: true
+    }
+    ```
  
 * **Error Response:**
 
@@ -49,7 +49,7 @@
     
 **Confirm code, user exists**
 ----
-  Sign in user by phone and code. The user with this phone must be registered in the system.
+  Sign in user by phone and code and checks whether the maximum number of attempts has been exceeded. The user with this phone must be registered in the system. In debug mode code '00000' always valid.
 
 * **URL:**
   /api/auth/users/
@@ -111,7 +111,7 @@
 
 **Confirm code, new user**
 ----
-  Sign up user by phone and code. The user must not be registered in the system. This kind of requests requires additional data. The user is automatically added to the users contact which contain the user's phone number.
+  Sign up user by phone and code and checks whether the maximum number of attempts has been exceeded. The user must not be registered in the system. This kind of requests requires additional data. The user is automatically added to the users contact which contain the user's phone number. In debug mode code '00000' always valid.
 
 * **URL:**
   /api/auth/users/
@@ -273,6 +273,44 @@
     }
     ```
     
+    **Code 401:** 
+    
+    **Content:** 
+    ```javascript
+    {
+      detail: "Invalid token."
+    }
+    ```
+    
+    
+**Delete own account**
+----
+  Permanently delete account with all settings and relationships.
+
+* **URL**
+  /api/account/
+
+* **Method:**
+  `DELETE`
+  
+*  **Headers:** 
+
+     Authorization: `"Token aasfsdfsfsdfsfdf234aa"`
+   
+*  **URL Params:**
+    None
+    
+* **Data Params:**
+    None
+         
+* **Success Response:**
+
+    **Code 204:**
+    
+    **Content:** `` 
+    
+* **Error Response:**
+
     **Code 401:** 
     
     **Content:** 

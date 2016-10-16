@@ -15,7 +15,7 @@ REDIS_SETTINGS = settings.REDIS
 REDIS_SETTINGS['DB'] += 1
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
+@override_settings(REDIS=REDIS_SETTINGS, TEST_SMS=True)
 class CodeSendingTests(APITestCase):
     url = '/api/auth/code/'
     phone_storage.connect()
@@ -96,21 +96,28 @@ class PhoneConfirmTests(APITestCase):
     def test_incorrect_code(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': False})
+        self.assertEqual(r.status_code, 400)
+
+    def test_another_phone_number(self):
+        phone = Phone('+79250741413')
+        phone.set_code('00000')
+        r = self.client.post(self.url, {'phone': '+79250741412', 'code': '00000'})
         self.assertEqual(r.status_code, 400)
 
     def test_limit_exceeded(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000', attempts=settings.SMS_AUTH['ATTEMPTS_LIMIT'])
+        phone.set_code(code='00000')
+        phone.set_attempts(settings.SMS_AUTH['ATTEMPTS_LIMIT'])
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 429)
 
     def test_expire(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000', time=0)
+        phone.set_code(code='00000', time=0)
         time.sleep(1)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 400)
@@ -118,7 +125,7 @@ class PhoneConfirmTests(APITestCase):
     def test_sign_in_token_exists(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         u = User.objects.create(phone=phone_number)
         token = token_storage.create(u.id)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
@@ -129,7 +136,7 @@ class PhoneConfirmTests(APITestCase):
     def test_sign_in_new_token(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         u = User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 201)
@@ -139,14 +146,14 @@ class PhoneConfirmTests(APITestCase):
     def test_sign_in_user_not_exists(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': False})
         self.assertEqual(r.status_code, 404)
 
     def test_sign_up_no_name(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': ''})
         self.assertEqual(r.status_code, 400)
         self.assertIn('name', r.data)
@@ -154,7 +161,7 @@ class PhoneConfirmTests(APITestCase):
     def test_sign_up_user_exists(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '00000', 'is_new': True, 'name': 'aa'})
         self.assertEqual(r.status_code, 400)
@@ -163,7 +170,7 @@ class PhoneConfirmTests(APITestCase):
     def test_sign_up_ok(self):
         phone_number = '+79250741413'
         phone = Phone(phone_number)
-        phone.create(code='00000')
+        phone.set_code(code='00000')
         u1 = User.objects.create(phone='+79250741414')
         u2 = User.objects.create(phone='+79250741412')
         u1.add_to_contacts('+79250741413', 'hello')
