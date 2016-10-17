@@ -17,8 +17,7 @@ class User(models.Model):
     phone = models.CharField(max_length=FIELD_MAX_LENGTH, unique=True)
     created = models.DateTimeField(auto_now_add=True)
     hidden_phone = models.BooleanField(default=False)
-    avatar = models.ImageField(
-        upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
+    avatar = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
     REQUIRED_FIELDS = []
     USERNAME_FIELD = 'phone'
 
@@ -105,6 +104,13 @@ class User(models.Model):
             qs = qs.filter(contacts__active=True)
         return qs
 
+    def meetings(self, active_only=True):
+        from meetings.models import Meeting
+        qs = Meeting.objects.filter(members__user=self).distinct('id')
+        if active_only:
+            qs = qs.filter(members__active=True)
+        return qs
+
 
 class BlackList(models.Model):
     user_from = models.ForeignKey('User', models.CASCADE, related_name='blocks')
@@ -125,11 +131,15 @@ def new_registered_user(instance, created, **kwargs):
 @receiver(pre_delete, sender=User)
 def delete_user(instance, **kwargs):
     tokens.delete(instance.id)
+    meetings = instance.meetings()
+    for m in meetings:
+        m.leave(instance.id, save=False)
+    bulk_update(meetings, update_fields=['king'])
 
 
 class Contact(models.Model):
-    user_from = models.ForeignKey('users.User', models.CASCADE, related_name='contacts')
-    user_to = models.ForeignKey('users.User', models.SET_NULL, related_name='inbound_contacts', null=True)
+    user_from = models.ForeignKey('User', models.CASCADE, related_name='contacts')
+    user_to = models.ForeignKey('User', models.SET_NULL, related_name='inbound_contacts', null=True)
     phone = models.CharField(max_length=FIELD_MAX_LENGTH)
     name = models.CharField(max_length=FIELD_MAX_LENGTH, null=True)
     active = models.BooleanField(default=True)
