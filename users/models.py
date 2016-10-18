@@ -80,35 +80,35 @@ class User(models.Model):
     def remove_from_contacts(self, phones):
         self.contacts.filter(phone__in=phones).distinct('phone').update(active=False)
 
-    def blocked_users(self, active_only=True):
+    @property
+    def blocked_users(self):
         qs = User.objects.filter(inbound_blocks__user_from=self).distinct('id')
-        if active_only:
-            qs = qs.filter(inbound_blocks__active=True)
+        qs = qs.filter(inbound_blocks__active=True)
         return qs
 
-    def blocked_me(self, active_only=True):
+    @property
+    def blocked_me(self):
         qs = User.objects.filter(blocks__user_to=self).distinct('id')
-        if active_only:
-            qs = qs.filter(blocks__active=True)
+        qs = qs.filter(blocks__active=True)
         return qs
 
-    def contacted_users(self, active_only=True):
+    @property
+    def contacted_users(self):
         qs = User.objects.filter(inbound_contacts__user_from=self).distinct('id')
-        if active_only:
-            qs = qs.filter(inbound_contacts__active=True)
+        qs = qs.filter(inbound_contacts__active=True)
         return qs
 
-    def contacted_me(self, active_only=True):
+    @property
+    def contacted_me(self):
         qs = User.objects.filter(contacts__user_to=self).distinct('id')
-        if active_only:
-            qs = qs.filter(contacts__active=True)
+        qs = qs.filter(contacts__active=True)
         return qs
 
-    def meetings(self, active_only=True):
+    @property
+    def meetings(self):
         from meetings.models import Meeting
         qs = Meeting.objects.filter(members__user=self).distinct('id')
-        if active_only:
-            qs = qs.filter(members__active=True)
+        qs = qs.filter(members__active=True)
         return qs
 
 
@@ -131,10 +131,9 @@ def new_registered_user(instance, created, **kwargs):
 @receiver(pre_delete, sender=User)
 def delete_user(instance, **kwargs):
     tokens.delete(instance.id)
-    meetings = instance.meetings()
+    meetings = instance.meetings
     for m in meetings:
-        m.leave(instance.id, save=False)
-    bulk_update(meetings, update_fields=['king'])
+        m.leave(instance.id)
 
 
 class Contact(models.Model):

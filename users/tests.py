@@ -63,7 +63,7 @@ class BlacklistAddTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]['id'], self.u2.id)
-        self.assertIn(self.u2, self.u.blocked_users())
+        self.assertIn(self.u2, self.u.blocked_users)
 
     def test_exists_block(self):
         self.u.blocks.create(user_to=self.u2, active=False)
@@ -71,7 +71,7 @@ class BlacklistAddTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]['id'], self.u2.id)
-        self.assertIn(self.u2, self.u.blocked_users())
+        self.assertIn(self.u2, self.u.blocked_users)
 
 
 @override_settings(REDIS=REDIS_SETTINGS)
@@ -103,8 +103,8 @@ class BlackListDeleteTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]['id'], self.u3.id)
-        self.assertIn(self.u3, self.u.blocked_users())
-        self.assertNotIn(self.u2, self.u.blocked_users())
+        self.assertIn(self.u3, self.u.blocked_users)
+        self.assertNotIn(self.u2, self.u.blocked_users)
 
 
 @override_settings(REDIS=REDIS_SETTINGS)
@@ -172,8 +172,8 @@ class ContactsImportTests(APITestCase):
         r = self.client.put(self.url, data={'names': names, 'phones': phones})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 2)
-        self.assertIn(self.u2, self.u.contacted_users())
-        self.assertIn(self.u3, self.u.contacted_users())
+        self.assertIn(self.u2, self.u.contacted_users)
+        self.assertIn(self.u3, self.u.contacted_users)
         for c in r.data:
             if c['phone'] == self.u2.phone:
                 c['name'] = 'hello'
@@ -190,8 +190,8 @@ class ContactsImportTests(APITestCase):
         r = self.client.put(self.url, data={'names': names, 'phones': phones})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 2)
-        self.assertIn(self.u2, self.u.contacted_users())
-        self.assertIn(self.u3, self.u.contacted_users())
+        self.assertIn(self.u2, self.u.contacted_users)
+        self.assertIn(self.u3, self.u.contacted_users)
         for c in r.data:
             if c['phone'] == self.u2.phone:
                 c['name'] = 'hello'
@@ -219,8 +219,8 @@ class ContactsDeleteTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]['id'], u2.id)
-        self.assertIn(u2, u.contacted_users())
-        self.assertNotIn(u3, u.contacted_users())
+        self.assertIn(u2, u.contacted_users)
+        self.assertNotIn(u3, u.contacted_users)
 
 
 @override_settings(REDIS=REDIS_SETTINGS)

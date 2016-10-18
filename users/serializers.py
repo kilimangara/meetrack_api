@@ -51,7 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
         viewer = self.context['viewer']
         contacts = {c.user_to_id: c for c in viewer.contacts.filter(active=True)}
         self.context['contacts'] = contacts
-        self.context['blocked_viewer'] = viewer.blocked_me()
+        self.context['blocked_viewer'] = viewer.blocked_me
 
     def to_representation(self, instance):
         viewer = self.context['viewer']

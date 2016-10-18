@@ -83,6 +83,6 @@ def contacts(request):
             if not serializer.is_valid():
                 return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
             user.remove_from_contacts(serializer.validated_data['phones'])
-        users = user.contacted_users()
+        users = user.contacted_users
     serializer = UserSerializer(users, context={'viewer': user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
