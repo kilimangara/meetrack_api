@@ -15,11 +15,17 @@ class Meeting(models.Model):
     description = models.TextField()
     logo = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
     created = models.DateTimeField(auto_now_add=True)
-    time = models.DateTimeField()
+    time = models.DateTimeField(null=True)
     completed = models.BooleanField(default=False)
 
+    @property
     def king(self):
-        return self.users.get(memberships__king=True)
+        qs = self.users
+        # print(User.objects.filter(memberships__meeting=self).distinct('id').filter(memberships__active=True).filter(
+        #     memberships__king=True))
+        print(qs)
+        print(qs.filter(memberships__king=True))
+        return self.users.filter(memberships__king=True).first()
 
     def leave(self, user_id):
         with atomic():
@@ -44,6 +50,9 @@ class Meeting(models.Model):
         qs = User.objects.filter(memberships__meeting=self).distinct('id')
         qs = qs.filter(memberships__active=True)
         return qs
+
+    def __str__(self):
+        return str(self.id)
 
 
 class Member(models.Model):

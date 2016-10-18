@@ -19,6 +19,7 @@ from django.conf import settings
 urlpatterns = [
     url(r'^api/auth/', include('registration.urls')),
     url(r'^api/', include('users.urls')),
+    url(r'^api/meetings/', include('meetings.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static.static(settings.MEDIA_URL,

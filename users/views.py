@@ -64,7 +64,7 @@ def blacklist(request):
             user.add_to_blacklist(user_id)
         else:
             user.remove_from_blacklist(user_id)
-    serializer = UserSerializer(user.blocked_users(), context={'viewer': user}, many=True)
+    serializer = UserSerializer(user.blocked_users, context={'viewer': user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
