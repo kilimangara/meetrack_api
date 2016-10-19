@@ -27,7 +27,7 @@ class User(models.Model):
     USERNAME_FIELD = 'phone'
 
     def __str__(self):
-        return self.phone
+        return self.phone + ' ' + str(self.id)
 
     @property
     def is_anonymous(self):

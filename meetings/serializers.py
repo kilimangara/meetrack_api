@@ -1,6 +1,9 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Meeting
+
+User = get_user_model()
 
 
 class MeetingsListTypeSerializer(serializers.Serializer):
@@ -9,15 +12,19 @@ class MeetingsListTypeSerializer(serializers.Serializer):
 
 class MeetingSerializer(serializers.ModelSerializer):
     king = serializers.SerializerMethodField(read_only=True)
-    users = serializers.SerializerMethodField()
+    users = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
 
     @classmethod
     def get_king(cls, obj):
-        return obj.king.id
+        return None
 
-    @classmethod
-    def get_users(cls, obj):
-        return obj.users.values_list('id', flat=True)
+    def create(self, validated_data):
+        king = self.context['king']
+        users = validated_data['users']
+        users.append(king)
+        users = set(users)
+        validated_data['users'] = users
+        return super().create(validated_data)
 
     class Meta:
         model = Meeting

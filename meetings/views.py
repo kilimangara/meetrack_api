@@ -23,8 +23,8 @@ def meetings_list(request):
         serializer = MeetingSerializer(meetings, many=True)
         return Response(serializer.data, status.HTTP_200_OK)
     elif request.method == 'POST':
-        serializer = MeetingSerializer(data=request.data)
+        serializer = MeetingSerializer(data=request.data, context={'king': user})
         if not serializer.is_valid():
             return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-        print(serializer.validated_data)
+        serializer.save()
         return Response(serializer.data, status.HTTP_201_CREATED)
