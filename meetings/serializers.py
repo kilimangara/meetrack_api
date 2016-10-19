@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Meeting, Member
+
+from .models import Meeting
 
 
 class MeetingsListTypeSerializer(serializers.Serializer):
@@ -8,7 +9,7 @@ class MeetingsListTypeSerializer(serializers.Serializer):
 
 class MeetingSerializer(serializers.ModelSerializer):
     king = serializers.SerializerMethodField(read_only=True)
-    users = serializers.SerializerMethodField(read_only=True)
+    users = serializers.SerializerMethodField()
 
     @classmethod
     def get_king(cls, obj):

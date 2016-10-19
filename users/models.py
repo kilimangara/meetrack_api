@@ -18,6 +18,11 @@ class User(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     hidden_phone = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
+    blocked_users = models.ManyToManyField('self', related_name='blocked_me', symmetrical=False, through='BlackList',
+                                           through_fields=['user_from', 'user_to'])
+    contacted_users = models.ManyToManyField('self', related_name='contacted_me', symmetrical=False, through='Contact',
+                                             through_fields=['user_from', 'user_to'])
+
     REQUIRED_FIELDS = []
     USERNAME_FIELD = 'phone'
 
@@ -41,13 +46,10 @@ class User(models.Model):
         return True
 
     def add_to_blacklist(self, user_id):
-        if self.blocks.filter(user_to_id=user_id).exists():
-            self.blocks.filter(user_to_id=user_id).update(active=True)
-        else:
-            self.blocks.create(user_to_id=user_id)
+        self.blocks.get_or_create(user_to_id=user_id)
 
     def remove_from_blacklist(self, user_id):
-        self.blocks.filter(user_to_id=user_id).update(active=False)
+        self.blocks.filter(user_to_id=user_id).delete()
 
     def add_to_contacts(self, phones, names):
         if isinstance(phones, str):
@@ -59,7 +61,6 @@ class User(models.Model):
         imported_contacts = []
         for contact in old_contacts:
             phone = contact.phone
-            contact.active = True
             contact.name = input_contacts[phone]
             input_contacts.pop(phone)
             if contact.user_to_id is not None:
@@ -73,49 +74,17 @@ class User(models.Model):
             if user_to_id is not None:
                 imported_contacts.append(c.user_to_id)
         with atomic():
-            bulk_update(old_contacts, update_fields=['name', 'active'])
+            bulk_update(old_contacts, update_fields=['name'])
             Contact.objects.bulk_create(to_create)
         return User.objects.filter(id__in=imported_contacts)
 
     def remove_from_contacts(self, phones):
-        self.contacts.filter(phone__in=phones).distinct('phone').update(active=False)
-
-    @property
-    def blocked_users(self):
-        qs = User.objects.filter(inbound_blocks__user_from=self).distinct('id')
-        qs = qs.filter(inbound_blocks__active=True)
-        return qs
-
-    @property
-    def blocked_me(self):
-        qs = User.objects.filter(blocks__user_to=self).distinct('id')
-        qs = qs.filter(blocks__active=True)
-        return qs
-
-    @property
-    def contacted_users(self):
-        qs = User.objects.filter(inbound_contacts__user_from=self).distinct('id')
-        qs = qs.filter(inbound_contacts__active=True)
-        return qs
-
-    @property
-    def contacted_me(self):
-        qs = User.objects.filter(contacts__user_to=self).distinct('id')
-        qs = qs.filter(contacts__active=True)
-        return qs
-
-    @property
-    def meetings(self):
-        from meetings.models import Meeting
-        qs = Meeting.objects.filter(members__user=self).distinct('id')
-        qs = qs.filter(members__active=True)
-        return qs
+        self.contacts.filter(phone__in=phones).distinct('phone').delete()
 
 
 class BlackList(models.Model):
     user_from = models.ForeignKey('User', models.CASCADE, related_name='blocks')
     user_to = models.ForeignKey('User', models.CASCADE, related_name='inbound_blocks')
-    active = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ['user_from', 'user_to']
@@ -131,7 +100,7 @@ def new_registered_user(instance, created, **kwargs):
 @receiver(pre_delete, sender=User)
 def delete_user(instance, **kwargs):
     tokens.delete(instance.id)
-    meetings = instance.meetings
+    meetings = instance.meetings.all()
     for m in meetings:
         m.leave(instance.id)
 
@@ -141,7 +110,6 @@ class Contact(models.Model):
     user_to = models.ForeignKey('User', models.SET_NULL, related_name='inbound_contacts', null=True)
     phone = models.CharField(max_length=FIELD_MAX_LENGTH)
     name = models.CharField(max_length=FIELD_MAX_LENGTH, null=True)
-    active = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ['user_from', 'user_to']

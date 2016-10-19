@@ -36,7 +36,7 @@ class ForeignUserIdSerializer(serializers.Serializer):
         viewer = self.context['viewer']
         if viewer.id == value:
             raise ValidationError("Can not do it with yourself.")
-        elif not User.objects.filter(id=value):
+        elif not User.objects.filter(id=value).exists():
             raise ValidationError("User with this id does not exist.")
         return value
 
@@ -49,9 +49,9 @@ class UserSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         viewer = self.context['viewer']
-        contacts = {c.user_to_id: c for c in viewer.contacts.filter(active=True)}
+        contacts = {c.user_to_id: c for c in viewer.contacts.all()}
         self.context['contacts'] = contacts
-        self.context['blocked_viewer'] = viewer.blocked_me
+        self.context['blocked_viewer'] = viewer.blocked_me.all()
 
     def to_representation(self, instance):
         viewer = self.context['viewer']

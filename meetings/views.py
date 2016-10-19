@@ -19,8 +19,12 @@ def meetings_list(request):
             return Response(choice_serializer.errors, status.HTTP_400_BAD_REQUEST)
         meetings = user.meetings
         if not choice_serializer.validated_data['all']:
-            meetings.filter(completed=False)
+            meetings = meetings.filter(completed=False)
         serializer = MeetingSerializer(meetings, many=True)
         return Response(serializer.data, status.HTTP_200_OK)
     elif request.method == 'POST':
-        pass
+        serializer = MeetingSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        print(serializer.validated_data)
+        return Response(serializer.data, status.HTTP_201_CREATED)

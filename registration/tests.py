@@ -166,5 +166,5 @@ class PhoneConfirmTests(APITestCase):
         self.assertEqual(tokens.authenticate(r.data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)
-        self.assertIn(u, u1.contacted_users)
-        self.assertIn(u, u2.contacted_users)
+        self.assertIn(u, u1.contacted_users.all())
+        self.assertIn(u, u2.contacted_users.all())

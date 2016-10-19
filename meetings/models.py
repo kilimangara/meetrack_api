@@ -17,39 +17,23 @@ class Meeting(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     time = models.DateTimeField(null=True)
     completed = models.BooleanField(default=False)
+    users = models.ManyToManyField('users.User', related_name='meetings', through='Member')
 
     @property
     def king(self):
-        qs = self.users
-        # print(User.objects.filter(memberships__meeting=self).distinct('id').filter(memberships__active=True).filter(
-        #     memberships__king=True))
-        print(qs)
-        print(qs.filter(memberships__king=True))
-        return self.users.filter(memberships__king=True).first()
+        return User.objects.filter(memberships__meeting=self, memberships__king=True).first()
 
-    def leave(self, user_id):
+    def remove_user(self, user_id):
         with atomic():
             if self.members.filter(user_id=user_id, king=True).exists():
-                user_ids = self.members.filter(active=True).exclude(user_id=user_id).values_list('user_id', flat=True)
+                user_ids = self.members.exclude(user_id=user_id).values_list('user_id', flat=True)
                 if user_ids:
                     new_king_id = random.choice(user_ids)
                     self.members.filter(user_id=new_king_id).update(king=True)
-            self.members.filter(user_id=user_id).update(active=False, king=False)
+            self.members.filter(user_id=user_id).delete()
 
-    def exclude(self, user_id):
-        self.members.filter(user_id=user_id).update(active=False)
-
-    def invite(self, user_id):
-        if self.members.filter(user_id=user_id).exists():
-            self.members.filter(user_id=user_id).update(active=True)
-        else:
-            self.members.create(user_id=user_id)
-
-    @property
-    def users(self):
-        qs = User.objects.filter(memberships__meeting=self).distinct('id')
-        qs = qs.filter(memberships__active=True)
-        return qs
+    def add_user(self, user_id):
+        self.members.get_or_create(user_id=user_id)
 
     def __str__(self):
         return str(self.id)
@@ -58,7 +42,6 @@ class Meeting(models.Model):
 class Member(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='memberships')
     meeting = models.ForeignKey('Meeting', on_delete=models.CASCADE, related_name='members')
-    active = models.BooleanField(default=True)
     king = models.BooleanField(default=False)
 
     class Meta:
