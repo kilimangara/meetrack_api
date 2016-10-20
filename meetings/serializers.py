@@ -41,9 +41,9 @@ class MembersSerializer(serializers.Serializer):
 class MeetingSerializer(serializers.ModelSerializer):
     king = serializers.SerializerMethodField(read_only=True)
 
-    @classmethod
-    def get_king(cls, obj):
-        return obj.king.id
+    def get_king(self, obj):
+        king = self.context.get('king') or obj.king
+        return king.id
 
     def create(self, validated_data):
         m = super().create(validated_data)
@@ -59,6 +59,24 @@ class MeetingSerializer(serializers.ModelSerializer):
         read_only_fields = ['created', 'completed']
         extra_kwargs = {
             'description': {
-                'required': False,
+                'required': False
+            }
+        }
+
+
+class MeetingUpdateSerializer(serializers.ModelSerializer):
+    @classmethod
+    def validate_completed(cls, value):
+        completed = value
+        if not completed:
+            raise ValidationError("completed must be True or not specified.")
+        return completed
+
+    class Meta:
+        model = Meeting
+        fields = ['completed']
+        extra_kwargs = {
+            'completed': {
+                'required': False
             }
         }

@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, PermissionDenied
 from .models import Meeting
 
-from .serializers import MeetingSerializer, MeetingsListTypeSerializer, MembersSerializer, ForeignUserIdSerializer
+from .serializers import MeetingSerializer, MembersSerializer, ForeignUserIdSerializer
+from .serializers import MeetingsListTypeSerializer, MeetingUpdateSerializer
 
 User = get_user_model()
 
@@ -36,20 +37,36 @@ def meetings_list(request):
         return Response(serializer.data, status.HTTP_201_CREATED)
 
 
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'DELETE', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def single_meeting(request, pk):
     user = request.user
-    try:
-        meeting = Meeting.objects.get(id=pk, members__user=user)
-    except Meeting.DoesNotExist:
-        raise NotFound()
-    if request.method == 'GET':
-        serializer = MeetingSerializer(meeting)
+    if request.method == 'PATCH':
+        try:
+            meeting = Meeting.objects.get(id=pk, members__user=user, completed=False)
+        except Meeting.DoesNotExist:
+            raise NotFound()
+        if user != meeting.king:
+            raise PermissionDenied()
+        update_serializer = MeetingUpdateSerializer(meeting, data=request.data, partial=True)
+        if not update_serializer.is_valid():
+            return Response(update_serializer.errors, status.HTTP_400_BAD_REQUEST)
+        print(meeting.completed)
+        update_serializer.save()
+        print(meeting.completed)
+        serializer = MeetingSerializer(meeting, context={'king': user})
         return Response(serializer.data, status.HTTP_200_OK)
-    elif request.method == 'DELETE':
-        meeting.remove_user(user.id)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    else:
+        try:
+            meeting = Meeting.objects.get(id=pk, members__user=user)
+        except Meeting.DoesNotExist:
+            raise NotFound()
+        if request.method == 'GET':
+            serializer = MeetingSerializer(meeting)
+            return Response(serializer.data, status.HTTP_200_OK)
+        elif request.method == 'DELETE':
+            meeting.remove_user(user.id)
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['DELETE', 'PUT'])
