@@ -35,8 +35,8 @@ def users_list(request):
     ids_serializer = UserIdsSerializer(data=request.query_params)
     if not ids_serializer.is_valid():
         return Response(ids_serializer.errors, status.HTTP_400_BAD_REQUEST)
-    matched_users = ids_serializer.registered_users()
-    serializer = UserSerializer(matched_users, context={'viewer': request.user}, many=True)
+    users = ids_serializer.validated_data['users']
+    serializer = UserSerializer(users, context={'viewer': request.user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)
 
 
@@ -59,7 +59,7 @@ def blacklist(request):
         id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
         if not id_serializer.is_valid():
             return Response(id_serializer.errors, status.HTTP_400_BAD_REQUEST)
-        user_id = id_serializer.validated_data['user_id']
+        user_id = id_serializer.validated_data['user']
         if request.method == 'PUT':
             user.add_to_blacklist(user_id)
         else:
@@ -73,16 +73,17 @@ def blacklist(request):
 def contacts(request):
     user = request.user
     if request.method == 'PUT':
-        serializer = ImportContactsSerializer(data=request.data, context={'user': user})
-        if not serializer.is_valid():
-            return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-        users = user.add_to_contacts(serializer.validated_data['phones'], serializer.validated_data['names'])
+        contacts_serializer = ImportContactsSerializer(data=request.data, context={'user': user})
+        if not contacts_serializer.is_valid():
+            return Response(contacts_serializer.errors, status.HTTP_400_BAD_REQUEST)
+        users = user.add_to_contacts(contacts_serializer.validated_data['phones'],
+                                     contacts_serializer.validated_data['names'])
     else:
         if request.method == 'DELETE':
-            serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
-            if not serializer.is_valid():
-                return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-            user.remove_from_contacts(serializer.validated_data['phones'])
+            phones_serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
+            if not phones_serializer.is_valid():
+                return Response(phones_serializer.errors, status.HTTP_400_BAD_REQUEST)
+            user.remove_from_contacts(phones_serializer.validated_data['phones'])
         users = user.contacted_users
     serializer = UserSerializer(users, context={'viewer': user}, many=True)
     return Response(serializer.data, status.HTTP_200_OK)

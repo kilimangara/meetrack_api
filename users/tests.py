@@ -47,17 +47,17 @@ class BlacklistAddTests(APITestCase):
         self.u2 = User.objects.create(phone='+79250741412')
 
     def test_user_does_not_exist(self):
-        r = self.client.put(self.url, data={'user_id': 228})
+        r = self.client.put(self.url, data={'user': 228})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('user_id', r.data)
+        self.assertIn('user', r.data)
 
     def test_yourself(self):
-        r = self.client.put(self.url, data={'user_id': self.u.id})
+        r = self.client.put(self.url, data={'user': self.u.id})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('user_id', r.data)
+        self.assertIn('user', r.data)
 
     def test_new_block(self):
-        r = self.client.put(self.url, data={'user_id': self.u2.id})
+        r = self.client.put(self.url, data={'user': self.u2.id})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]['id'], self.u2.id)
@@ -77,19 +77,19 @@ class BlackListDeleteTests(APITestCase):
         self.u3 = User.objects.create(phone='+79250741415')
 
     def test_user_does_not_exist(self):
-        r = self.client.delete(self.url, data={'user_id': 228})
+        r = self.client.delete(self.url, data={'user': 228})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('user_id', r.data)
+        self.assertIn('user', r.data)
 
     def test_yourself(self):
-        r = self.client.delete(self.url, data={'user_id': self.u.id})
+        r = self.client.delete(self.url, data={'user': self.u.id})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('user_id', r.data)
+        self.assertIn('user', r.data)
 
     def test_success(self):
         self.u.blocks.create(user_to=self.u2)
         self.u.blocks.create(user_to=self.u3)
-        r = self.client.delete(self.url, data={'user_id': self.u2.id})
+        r = self.client.delete(self.url, data={'user': self.u2.id})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]['id'], self.u3.id)

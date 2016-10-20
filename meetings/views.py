@@ -3,8 +3,10 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound, PermissionDenied
+from .models import Meeting
 
-from .serializers import MeetingSerializer, MeetingsListTypeSerializer
+from .serializers import MeetingSerializer, MeetingsListTypeSerializer, MembersSerializer, ForeignUserIdSerializer
 
 User = get_user_model()
 
@@ -23,8 +25,51 @@ def meetings_list(request):
         serializer = MeetingSerializer(meetings, many=True)
         return Response(serializer.data, status.HTTP_200_OK)
     elif request.method == 'POST':
-        serializer = MeetingSerializer(data=request.data, context={'king': user})
+        ids_serializer = MembersSerializer(data=request.data, context={'king': user})
+        if not ids_serializer.is_valid():
+            return Response(ids_serializer.errors, status.HTTP_400_BAD_REQUEST)
+        user_ids = ids_serializer.validated_data['users']
+        serializer = MeetingSerializer(data=request.data, context={'king': user, 'user_ids': user_ids})
         if not serializer.is_valid():
             return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
         serializer.save()
         return Response(serializer.data, status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def single_meeting(request, pk):
+    user = request.user
+    try:
+        meeting = Meeting.objects.get(id=pk, members__user=user)
+    except Meeting.DoesNotExist:
+        raise NotFound()
+    if request.method == 'GET':
+        serializer = MeetingSerializer(meeting)
+        return Response(serializer.data, status.HTTP_200_OK)
+    elif request.method == 'DELETE':
+        meeting.remove_user(user.id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['DELETE', 'PUT'])
+@permission_classes([IsAuthenticated])
+def meeting_members(request, pk):
+    user = request.user
+    try:
+        meeting = Meeting.objects.get(id=pk, completed=False, members__user=user)
+    except Meeting.DoesNotExist:
+        raise NotFound()
+    id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
+    if not id_serializer.is_valid():
+        return Response(id_serializer.errors, status.HTTP_400_BAD_REQUEST)
+    user_id = id_serializer.validated_data['user']
+    if request.method == 'DELETE':
+        if meeting.king != user:
+            raise PermissionDenied()
+        meeting.remove_user(user_id)
+    elif request.method == 'PUT':
+        if not user.inbound_blocks.filter(user_from_id=user_id).exists():
+            meeting.add_user(user_id)
+    serializer = MeetingSerializer(meeting)
+    return Response(serializer.data, status.HTTP_200_OK)

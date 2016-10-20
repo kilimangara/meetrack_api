@@ -1,30 +1,57 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from .models import Meeting
+from .models import Meeting, Member
 
 User = get_user_model()
+
+
+class ForeignUserIdSerializer(serializers.Serializer):
+    user = serializers.IntegerField()
+
+    def validate_user(self, value):
+        viewer = self.context['viewer']
+        if viewer.id == value:
+            raise ValidationError("Can not do it with yourself.")
+        elif not User.objects.filter(id=value).exists():
+            raise ValidationError("User with this id does not exist.")
+        return value
 
 
 class MeetingsListTypeSerializer(serializers.Serializer):
     all = serializers.BooleanField(default=False)
 
 
+class MembersSerializer(serializers.Serializer):
+    users = serializers.ListField(child=serializers.IntegerField())
+
+    def to_internal_value(self, data):
+        v = super().to_internal_value(data)
+        user_ids = v['users']
+        king = self.context['king']
+        user_ids.append(king.id)
+        blocked = king.inbound_blocks.values_list('user_from_id', flat=True)
+        user_ids = User.objects.filter(
+            id__in=user_ids).exclude(id__in=blocked).distinct('id').values_list('id', flat=True)
+        v['users'] = user_ids
+        return v
+
+
 class MeetingSerializer(serializers.ModelSerializer):
     king = serializers.SerializerMethodField(read_only=True)
-    users = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
 
     @classmethod
     def get_king(cls, obj):
-        return None
+        return obj.king.id
 
     def create(self, validated_data):
+        m = super().create(validated_data)
+        user_ids = self.context['user_ids']
         king = self.context['king']
-        users = validated_data['users']
-        users.append(king)
-        users = set(users)
-        validated_data['users'] = users
-        return super().create(validated_data)
+        members = [Member(user_id=uid, meeting=m, king=uid == king.id) for uid in user_ids]
+        Member.objects.bulk_create(members)
+        return m
 
     class Meta:
         model = Meeting

@@ -18,21 +18,19 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 class UserIdsSerializer(serializers.Serializer):
-    user_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    users = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
 
-    def registered_users(self):
-        ids = set(self.validated_data['user_ids'])
-        return User.objects.filter(id__in=ids)
-
-    def registered_user_ids(self):
-        ids = set(self.validated_data['user_ids'])
-        return User.objects.filter(id__in=ids).values_list('id', flat=True)
+    def to_internal_value(self, data):
+        v = super().to_internal_value(data)
+        user_ids = v['users']
+        v['users'] = User.objects.filter(id__in=user_ids).distinct('id')
+        return v
 
 
 class ForeignUserIdSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
+    user = serializers.IntegerField()
 
-    def validate_user_id(self, value):
+    def validate_user(self, value):
         viewer = self.context['viewer']
         if viewer.id == value:
             raise ValidationError("Can not do it with yourself.")
@@ -51,7 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
         viewer = self.context['viewer']
         contacts = {c.user_to_id: c for c in viewer.contacts.all()}
         self.context['contacts'] = contacts
-        self.context['blocked_viewer'] = viewer.blocked_me.all()
+        self.context['blocked_viewer'] = set(viewer.blocked_me.all())
 
     def to_representation(self, instance):
         viewer = self.context['viewer']
