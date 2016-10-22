@@ -267,7 +267,9 @@ class AccountTests(APITestCase):
     tokens.connect()
 
     def setUp(self):
-        self.u = User.objects.create(phone='+79250741414', name='hello')
+        self.name = 'hello'
+        self.phone = '+79250471414'
+        self.u = User.objects.create(phone=self.phone, name=self.name)
         self.token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
 
@@ -280,3 +282,56 @@ class AccountTests(APITestCase):
             tokens.authenticate(self.token)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 401)
+
+    def test_get(self):
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNone(r.data['avatar'])
+        self.assertEqual(self.u.name, r.data['name'])
+        self.assertEqual(self.u.id, r.data['id'])
+        self.assertEqual(self.u.phone, r.data['phone'])
+        self.assertEqual(self.u.hidden_phone, r.data['hidden_phone'])
+
+    def test_update_phone(self):
+        new_phone = '+79250741413'
+        r = self.client.patch(self.url, data={'phone': new_phone})
+        self.u.refresh_from_db()
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['phone'], self.phone)
+        self.assertNotEqual(self.u.phone, new_phone)
+
+    def test_update_name(self):
+        new_name = 'world'
+        r = self.client.patch(self.url, data={'name': new_name})
+        self.u.refresh_from_db()
+        self.assertEqual(r.status_code, 200)
+        self.assertNotEqual(r.data['name'], self.name)
+        self.assertEqual(self.u.name, new_name)
+
+    def test_update_hidden_phone(self):
+        self.u.hidden_phone = True
+        self.u.save()
+        r = self.client.patch(self.url, data={'hidden_phone': False})
+        self.u.refresh_from_db()
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['hidden_phone'], False)
+        self.assertEqual(self.u.hidden_phone, False)
+
+    def test_update_avatar(self):
+        self.assertFalse(self.u.avatar)
+        with open('users/test_files/file1.png', 'rb') as f:
+            r = self.client.patch(self.url, data={'avatar': f})
+        self.u.refresh_from_db()
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNotNone(r.data['avatar'])
+        self.assertTrue(self.u.avatar)
+        self.assertEqual(r.data['avatar'], self.u.avatar.url)
+
+    def test_update_avatar_not_image(self):
+        self.assertFalse(self.u.avatar)
+        with open('users/test_files/file2.png', 'rb') as f:
+            r = self.client.patch(self.url, data={'avatar': f})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('avatar', r.data)
+        self.u.refresh_from_db()
+        self.assertFalse(self.u.avatar)
