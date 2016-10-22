@@ -36,10 +36,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken',
-    'users',
     'common_fields',
+    'authtoken',
     'registration',
+    'meetings',
+    'users',
 ]
 AUTH_USER_MODEL = 'users.User'
 
@@ -149,12 +150,13 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'registration.auth.RedisTokenAuthentication'
+        'authtoken.authentication.RedisTokenAuthentication'
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
-    'DATETIME_FORMAT': '%s',
+    # 'DATETIME_FORMAT': '%s',
+    # 'DATETIME_INPUT_FORMATS': ['%S'],
 }
 
 SMS_AUTH = {
@@ -163,7 +165,8 @@ SMS_AUTH = {
     'AUTH_TOKEN': 'b3855a93c588996d3be0de9dba142d49',
     'FROM_NUMBER': '+12054154471',
     'ATTEMPTS_LIMIT': 5,
-    'LIFE_TIME': 60 * 1000,
+    'CODE_LIFE_TIME': 5 * 60,
+    'ATTEMPTS_LIFE_TIME': 10,
     'DEBUG_CODE': '00000',
 }
 

@@ -205,7 +205,7 @@
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
-      created: "2222333",
+      created: "2016-10-22T18:22:45.121940Z",
       hidden_phone: false, 
       avatar: "http://localhost:8000/path.png"
     }
@@ -260,7 +260,7 @@
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
-      created: "2222333",
+      created: "2016-10-22T18:22:45.121940Z",
       hidden_phone: false, 
       avatar: "http://localhost:8000/path.png"
     }
@@ -813,7 +813,7 @@
     
 **New meeting**
 ----
-  Creates new meeting with users by their ids, also notifies users about that. User who makes the request (creator) becomes king of meeting. If meeting is created with non-existing users or with users who blocked creator, these users are not added to the members. 
+  Creates new meeting with users by their ids, also notifies users about that. User who makes the request (creator) becomes king of meeting. If meeting is created with non-existing users or with users who blocked creator, these users are not added to the members. Meeting can contain a single user - creator, therefore "users" param is optional.
 
 * **URL**
   /api/meetings/
