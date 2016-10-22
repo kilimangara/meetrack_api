@@ -1,3 +1,406 @@
-from django.test import TestCase
+from django.conf import settings
+from django.test import override_settings
+from rest_framework.test import APITestCase
+from django.contrib.auth import get_user_model
+from authtoken import tokens
+from .models import Meeting
 
-# Create your tests here.
+User = get_user_model()
+
+REDIS_SETTINGS = settings.REDIS
+REDIS_SETTINGS['DB'] += 1
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class MeetingCreationTests(APITestCase):
+    url = '/api/meetings/'
+    tokens.connect()
+
+    def assert_lists_equal(self, l1, l2):
+        self.assertEqual(sorted(l1), sorted(l2))
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.u3 = User.objects.create(phone='+79250741413')
+
+    def test_without_title(self):
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': [self.u2.id]})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('title', r.data)
+
+    def test_without_logo(self):
+        r = self.client.post(self.url, data={'logo': '', 'users': [self.u2.id], 'title': '222'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('logo', r.data)
+
+    def test_users_with_creator(self):
+        users = [self.u2.id, self.u.id, self.u3.id]
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data['king'], self.u.id)
+        self.assert_lists_equal(r.data['users'], users)
+
+    def test_users_without_creator(self):
+        users = [self.u2.id, self.u3.id]
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data['king'], self.u.id)
+        self.assert_lists_equal(r.data['users'], users + [self.u.id])
+
+    def test_non_existing_users(self):
+        registered = [self.u2.id, self.u3.id, self.u.id]
+        non_registered = [228, 322]
+        users = registered + non_registered
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data['king'], self.u.id)
+        self.assert_lists_equal(r.data['users'], registered)
+
+    def test_blocked_user(self):
+        users = [self.u2.id, self.u3.id]
+        self.u2.blocks.create(user_to=self.u)
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data['king'], self.u.id)
+        self.assert_lists_equal(r.data['users'], [self.u3.id, self.u.id])
+        self.assertNotIn(self.u2.id, r.data['users'])
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class GetMeetingsTests(APITestCase):
+    url = '/api/meetings/'
+    tokens.connect()
+
+    def assert_ids_equal(self, data, expected):
+        self.assertEqual(sorted([x['id'] for x in data]), sorted(expected))
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.u3 = User.objects.create(phone='+79250741413')
+
+    def test_empty(self):
+        for _ in range(5):
+            m = Meeting.objects.create()
+            m.members.create(user=self.u2, king=True)
+            m.members.create(user=self.u3)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data, [])
+
+    def test_choice(self):
+        m1 = Meeting.objects.create()
+        m1.members.create(user=self.u, king=True)
+        m2 = Meeting.objects.create(completed=True)
+        m2.members.create(user=self.u, king=True)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assert_ids_equal(r.data, [m1.id])
+        r = self.client.get(self.url, data={'all': True})
+        self.assert_ids_equal(r.data, [m1.id, m2.id])
+
+    def test_not_king(self):
+        m1 = Meeting.objects.create()
+        m1.members.create(user=self.u2, king=True)
+        m1.members.create(user=self.u)
+        m2 = Meeting.objects.create()
+        m2.members.create(user=self.u2, king=True)
+        m2.members.create(user=self.u)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assert_ids_equal(r.data, [m1.id, m2.id])
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class GetSingleMeetingTests(APITestCase):
+    tokens.connect()
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.u3 = User.objects.create(phone='+79250741413')
+        self.m = Meeting.objects.create()
+        self.url = '/api/meetings/{}/'.format(self.m.id)
+
+    def test_not_member(self):
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('detail', r.data)
+
+    def test_member(self):
+        self.m.members.create(user=self.u2, king=True)
+        self.m.members.create(user=self.u)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['id'], self.m.id)
+
+    def test_completed(self):
+        self.m.members.create(user=self.u2, king=True)
+        self.m.members.create(user=self.u)
+        self.m.completed = True
+        self.m.save()
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['id'], self.m.id)
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class MeetingInviteTests(APITestCase):
+    tokens.connect()
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.u3 = User.objects.create(phone='+79250741413')
+        self.m = Meeting.objects.create()
+        self.url = '/api/meetings/{}/users/'.format(self.m.id)
+
+    def assert_lists_equal(self, l1, l2):
+        self.assertEqual(sorted(l1), sorted(l2))
+
+    def test_not_member(self):
+        self.m.members.create(user=self.u2, king=True)
+        self.m.members.create(user=self.u3)
+        r = self.client.put(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('detail', r.data)
+
+    def test_completed(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u3)
+        self.m.completed = True
+        self.m.save()
+        r = self.client.put(self.url, data={'user': self.u2.id})
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('detail', r.data)
+
+    def test_blocked(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        self.u3.blocks.create(user_to=self.u)
+        r = self.client.put(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn(self.u3, self.m.users.all())
+        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+
+    def test_not_king_success(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.put(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(self.u3, self.m.users.all())
+        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
+
+    def test_king_success(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        r = self.client.put(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(self.u3, self.m.users.all())
+        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
+
+    def test_already_invited(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.put(self.url, data={'user': self.u2.id})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn(self.u3, self.m.users.all())
+        self.assertIn(self.u2, self.m.users.all())
+        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+
+    def test_yourself(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.put(self.url, data={'user': self.u.id})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('user', r.data)
+
+    def test_user_does_not_exist(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.put(self.url, data={'user': 228})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('user', r.data)
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class MeetingExcludeTests(APITestCase):
+    tokens.connect()
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.u3 = User.objects.create(phone='+79250741413')
+        self.m = Meeting.objects.create()
+        self.url = '/api/meetings/{}/users/'.format(self.m.id)
+
+    def assert_lists_equal(self, l1, l2):
+        self.assertEqual(sorted(l1), sorted(l2))
+
+    def test_not_member(self):
+        self.m.members.create(user=self.u2, king=True)
+        self.m.members.create(user=self.u3)
+        r = self.client.delete(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('detail', r.data)
+
+    def test_completed(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u3)
+        self.m.completed = True
+        self.m.save()
+        r = self.client.delete(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 404)
+        self.assertIn('detail', r.data)
+
+    def test_not_king(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        self.m.members.create(user=self.u3)
+        r = self.client.delete(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 403)
+        self.assertIn(self.u3, self.m.users.all())
+
+    def test_king_success(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        self.m.members.create(user=self.u3)
+        r = self.client.delete(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn(self.u3, self.m.users.all())
+        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+
+    def test_already_excluded(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        r = self.client.delete(self.url, data={'user': self.u3.id})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotIn(self.u3, self.m.users.all())
+        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+
+    def test_yourself(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.delete(self.url, data={'user': self.u.id})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('user', r.data)
+
+    def test_user_does_not_exist(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.delete(self.url, data={'user': 228})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('user', r.data)
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class MeetingLeaveTests(APITestCase):
+    tokens.connect()
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.u3 = User.objects.create(phone='+79250741413')
+        self.m = Meeting.objects.create()
+        self.url = '/api/meetings/{}/'.format(self.m.id)
+
+    def assert_lists_equal(self, l1, l2):
+        self.assertEqual(sorted(l1), sorted(l2))
+
+    def test_not_king(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(self.m.king, self.u2)
+        self.assertNotIn(self.u, self.m.users.all())
+
+    def test_king(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(self.m.king, self.u2)
+        self.assertNotIn(self.u, self.m.users.all())
+
+    def test_single_not_member(self):
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 404)
+
+    def test_single_completed(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        self.m.completed = True
+        self.m.save()
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(self.m.king, self.u2)
+        self.assertNotIn(self.u, self.m.users.all())
+
+    def test_last(self):
+        self.m.members.create(user=self.u, king=True)
+        r = self.client.delete(self.url)
+        self.assertEqual(r.status_code, 204)
+        self.assertIsNone(self.m.king)
+        self.assertEqual(list(self.m.users.all()), [])
+
+
+@override_settings(REDIS=REDIS_SETTINGS)
+class MeetingCompleteTests(APITestCase):
+    tokens.connect()
+
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741414')
+        self.u2 = User.objects.create(phone='+79250741412')
+        self.token = tokens.create(self.u.id)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
+        self.m = Meeting.objects.create()
+        self.url = '/api/meetings/{}/'.format(self.m.id)
+
+    def test_not_king(self):
+        self.m.members.create(user=self.u)
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.patch(self.url, {'completed': True})
+        self.assertEqual(r.status_code, 403)
+
+    def test_not_member(self):
+        self.m.members.create(user=self.u2, king=True)
+        r = self.client.patch(self.url, {'completed': True})
+        self.assertEqual(r.status_code, 404)
+
+    def test_not_true(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        r = self.client.patch(self.url, {'completed': False})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('completed', r.data)
+
+    def test_success(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.members.create(user=self.u2)
+        r = self.client.patch(self.url, {'completed': True})
+        self.assertEqual(r.status_code, 200)
+        self.m.refresh_from_db()
+        self.assertEqual(r.data['id'], self.m.id)
+        self.assertTrue(r.data['completed'])
+        self.assertTrue(self.m.completed)

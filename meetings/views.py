@@ -43,7 +43,7 @@ def single_meeting(request, pk):
     user = request.user
     if request.method == 'PATCH':
         try:
-            meeting = Meeting.objects.get(id=pk, members__user=user, completed=False)
+            meeting = user.meetings.get(id=pk, completed=False)
         except Meeting.DoesNotExist:
             raise NotFound()
         if user != meeting.king:
@@ -51,14 +51,12 @@ def single_meeting(request, pk):
         update_serializer = MeetingUpdateSerializer(meeting, data=request.data, partial=True)
         if not update_serializer.is_valid():
             return Response(update_serializer.errors, status.HTTP_400_BAD_REQUEST)
-        print(meeting.completed)
         update_serializer.save()
-        print(meeting.completed)
         serializer = MeetingSerializer(meeting, context={'king': user})
         return Response(serializer.data, status.HTTP_200_OK)
     else:
         try:
-            meeting = Meeting.objects.get(id=pk, members__user=user)
+            meeting = user.meetings.get(id=pk)
         except Meeting.DoesNotExist:
             raise NotFound()
         if request.method == 'GET':
@@ -74,7 +72,7 @@ def single_meeting(request, pk):
 def meeting_members(request, pk):
     user = request.user
     try:
-        meeting = Meeting.objects.get(id=pk, completed=False, members__user=user)
+        meeting = user.meetings.get(id=pk, completed=False)
     except Meeting.DoesNotExist:
         raise NotFound()
     id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
