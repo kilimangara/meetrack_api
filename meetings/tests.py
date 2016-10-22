@@ -198,7 +198,7 @@ class MeetingInviteTests(APITestCase):
         self.assertNotIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
 
-    def test_not_king_success(self):
+    def test_not_king(self):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         r = self.client.put(self.url, data={'user': self.u3.id})
@@ -206,7 +206,7 @@ class MeetingInviteTests(APITestCase):
         self.assertIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
 
-    def test_king_success(self):
+    def test_king(self):
         self.m.members.create(user=self.u, king=True)
         self.m.members.create(user=self.u2)
         r = self.client.put(self.url, data={'user': self.u3.id})
@@ -278,7 +278,7 @@ class MeetingExcludeTests(APITestCase):
         self.assertEqual(r.status_code, 403)
         self.assertIn(self.u3, self.m.users.all())
 
-    def test_king_success(self):
+    def test_success(self):
         self.m.members.create(user=self.u, king=True)
         self.m.members.create(user=self.u2)
         self.m.members.create(user=self.u3)
@@ -342,12 +342,12 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(self.m.king, self.u2)
         self.assertNotIn(self.u, self.m.users.all())
 
-    def test_single_not_member(self):
+    def test_not_member(self):
         self.m.members.create(user=self.u2, king=True)
         r = self.client.delete(self.url)
         self.assertEqual(r.status_code, 404)
 
-    def test_single_completed(self):
+    def test_completed(self):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         self.m.completed = True
