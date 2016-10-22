@@ -41,14 +41,32 @@ class MeetingCreationTests(APITestCase):
         users = [self.u2.id, self.u.id, self.u3.id]
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        mid = r.data['id']
+        m = Meeting.objects.get(id=mid)
+        self.assertEqual(m.king, self.u)
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data['king'], self.u.id)
+        self.assert_lists_equal(r.data['users'], users)
+
+    def test_completed(self):
+        users = [self.u2.id, self.u.id, self.u3.id]
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'completed': True})
+        self.assertEqual(r.status_code, 201)
+        mid = r.data['id']
+        m = Meeting.objects.get(id=mid)
+        self.assertFalse(m.completed)
+        self.assertEqual(r.data['king'], self.u.id)
+        self.assertFalse(r.data['completed'])
         self.assert_lists_equal(r.data['users'], users)
 
     def test_users_without_creator(self):
         users = [self.u2.id, self.u3.id]
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        mid = r.data['id']
+        m = Meeting.objects.get(id=mid)
+        self.assertEqual(m.king, self.u)
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data['king'], self.u.id)
         self.assert_lists_equal(r.data['users'], users + [self.u.id])
@@ -59,6 +77,9 @@ class MeetingCreationTests(APITestCase):
         users = registered + non_registered
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        mid = r.data['id']
+        m = Meeting.objects.get(id=mid)
+        self.assertEqual(m.king, self.u)
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data['king'], self.u.id)
         self.assert_lists_equal(r.data['users'], registered)
@@ -68,6 +89,9 @@ class MeetingCreationTests(APITestCase):
         self.u2.blocks.create(user_to=self.u)
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+        mid = r.data['id']
+        m = Meeting.objects.get(id=mid)
+        self.assertEqual(m.king, self.u)
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data['king'], self.u.id)
         self.assert_lists_equal(r.data['users'], [self.u3.id, self.u.id])
@@ -140,7 +164,7 @@ class GetSingleMeetingTests(APITestCase):
         self.assertEqual(r.status_code, 404)
         self.assertIn('detail', r.data)
 
-    def test_member(self):
+    def test_uncompleted(self):
         self.m.members.create(user=self.u2, king=True)
         self.m.members.create(user=self.u)
         r = self.client.get(self.url)

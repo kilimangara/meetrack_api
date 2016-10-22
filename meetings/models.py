@@ -12,7 +12,7 @@ FIELD_MAX_LENGTH = 255
 
 class Meeting(models.Model):
     title = models.CharField(max_length=FIELD_MAX_LENGTH)
-    description = models.TextField()
+    description = models.TextField(null=True)
     logo = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
     created = models.DateTimeField(auto_now_add=True)
     time = models.DateTimeField(null=True)

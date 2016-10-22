@@ -1,13 +1,13 @@
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound, PermissionDenied
-from .models import Meeting
 
-from .serializers import MeetingSerializer, MembersSerializer, ForeignUserIdSerializer
-from .serializers import MeetingsListTypeSerializer, MeetingUpdateSerializer
+from .models import Meeting
+from .serializers import MeetingSerializer, MembersSerializer
+from .serializers import MeetingsListTypeSerializer, MeetingUpdateSerializer, ForeignUserIdSerializer
 
 User = get_user_model()
 
@@ -64,7 +64,7 @@ def single_meeting(request, pk):
             return Response(serializer.data, status.HTTP_200_OK)
         elif request.method == 'DELETE':
             meeting.remove_user(user.id)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['DELETE', 'PUT'])

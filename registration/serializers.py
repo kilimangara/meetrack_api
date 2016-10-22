@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, Throttled
-from phonenumber_field.serializers import PhoneNumberField
+from common_fields.serializers import PhoneNumberField
 
 from .phone_storage import Phone, PhoneDoesNotExist
 
