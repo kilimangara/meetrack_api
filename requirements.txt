@@ -5,4 +5,5 @@ psycopg2
 djangorestframework
 phonenumbers
 redis
+fakeredis
 django-bulk-update

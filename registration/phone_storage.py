@@ -1,21 +1,20 @@
 import redis
 from django.conf import settings
 
-conn_pool = None
+r = None
 
 
 class PhoneDoesNotExist(Exception):
     pass
 
 
-def get_redis():
-    return redis.StrictRedis(connection_pool=conn_pool)
-
-
-def connect():
-    global conn_pool
-    conn_pool = redis.ConnectionPool(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                                     port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+def connect(conn=None):
+    global r
+    if conn is None:
+        r = redis.StrictRedis(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
+                              port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+    else:
+        r = conn
 
 
 class Phone(object):
@@ -23,7 +22,7 @@ class Phone(object):
     ATTEMPTS_KEY = 'phone:{}:attempts'
 
     def __init__(self, phone):
-        self.r = get_redis()
+        self.r = r
         self.phone = phone
         self.code_key = self.CODE_KEY.format(phone)
         self.attempts_key = self.ATTEMPTS_KEY.format(phone)
@@ -61,11 +60,6 @@ class Phone(object):
 
     def delete(self):
         self.r.delete(self.code_key, self.attempts_key)
-
-
-def delete_all():
-    r = get_redis()
-    r.flushdb()
 
 
 connect()

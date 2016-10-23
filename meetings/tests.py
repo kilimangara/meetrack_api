@@ -1,20 +1,17 @@
-from django.conf import settings
-from django.test import override_settings
-from rest_framework.test import APITestCase
+import fakeredis
 from django.contrib.auth import get_user_model
+from rest_framework.test import APITestCase
+
 from authtoken import tokens
 from .models import Meeting
 
 User = get_user_model()
 
-REDIS_SETTINGS = settings.REDIS
-REDIS_SETTINGS['DB'] += 1
 
-
-@override_settings(REDIS=REDIS_SETTINGS)
 class MeetingCreationTests(APITestCase):
     url = '/api/meetings/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def assert_lists_equal(self, l1, l2):
         self.assertEqual(sorted(l1), sorted(l2))
@@ -98,10 +95,10 @@ class MeetingCreationTests(APITestCase):
         self.assertNotIn(self.u2.id, r.data['users'])
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class GetMeetingsTests(APITestCase):
     url = '/api/meetings/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def assert_ids_equal(self, data, expected):
         self.assertEqual(sorted([x['id'] for x in data]), sorted(expected))
@@ -145,9 +142,9 @@ class GetMeetingsTests(APITestCase):
         self.assert_ids_equal(r.data, [m1.id, m2.id])
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class GetSingleMeetingTests(APITestCase):
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -181,9 +178,9 @@ class GetSingleMeetingTests(APITestCase):
         self.assertEqual(r.data['id'], self.m.id)
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class MeetingInviteTests(APITestCase):
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -262,9 +259,9 @@ class MeetingInviteTests(APITestCase):
         self.assertIn('user', r.data)
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class MeetingExcludeTests(APITestCase):
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -334,9 +331,9 @@ class MeetingExcludeTests(APITestCase):
         self.assertIn('user', r.data)
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class MeetingLeaveTests(APITestCase):
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -389,9 +386,9 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(list(self.m.users.all()), [])
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class MeetingCompleteTests(APITestCase):
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')

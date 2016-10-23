@@ -1,20 +1,16 @@
-from django.conf import settings
+import fakeredis
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
 
 User = get_user_model()
 
-REDIS_SETTINGS = settings.REDIS
-REDIS_SETTINGS['DB'] += 1
 
-
-@override_settings(REDIS=REDIS_SETTINGS)
 class BlacklistGetTests(APITestCase):
     url = '/api/blacklist/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -35,10 +31,10 @@ class BlacklistGetTests(APITestCase):
         self.assertEqual(r.data[0]['id'], u1.id)
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class BlacklistAddTests(APITestCase):
     url = '/api/blacklist/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -64,10 +60,10 @@ class BlacklistAddTests(APITestCase):
         self.assertIn(self.u2, self.u.blocked_users.all())
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class BlackListDeleteTests(APITestCase):
     url = '/api/blacklist/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -97,10 +93,10 @@ class BlackListDeleteTests(APITestCase):
         self.assertNotIn(self.u2, self.u.blocked_users.all())
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class ContactsGetTests(APITestCase):
     url = '/api/contacts/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -121,10 +117,10 @@ class ContactsGetTests(APITestCase):
         self.assertEqual(r.data[0]['id'], u1.id)
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class ContactsImportTests(APITestCase):
     url = '/api/contacts/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -189,10 +185,10 @@ class ContactsImportTests(APITestCase):
                 raise Exception()
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class ContactsDeleteTests(APITestCase):
     url = '/api/contacts/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def test_success(self):
         u = User.objects.create(phone='+79250741413')
@@ -211,10 +207,10 @@ class ContactsDeleteTests(APITestCase):
         self.assertNotIn(u3, u.contacted_users.all())
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class UserRepresentationTests(APITestCase):
     url = '/api/users/{}/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.viewer = User.objects.create(phone='+79250741413')
@@ -261,10 +257,10 @@ class UserRepresentationTests(APITestCase):
         self.assertEqual(r.data['phone'], '+79250741414')
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class AccountTests(APITestCase):
     url = '/api/account/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.name = 'hello'

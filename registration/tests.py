@@ -1,5 +1,6 @@
 import time
 
+import fakeredis
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import override_settings
@@ -11,20 +12,18 @@ from .phone_storage import Phone
 
 User = get_user_model()
 
-REDIS_SETTINGS = settings.REDIS
-REDIS_SETTINGS['DB'] += 1
 
-
-@override_settings(REDIS=REDIS_SETTINGS, TEST_SMS=True)
+@override_settings(TEST_SMS=True)
 class CodeSendingTests(APITestCase):
     url = '/api/auth/code/'
-    phone_storage.connect()
+    r = fakeredis.FakeStrictRedis()
+    phone_storage.connect(r)
 
     def setUp(self):
-        phone_storage.delete_all()
+        self.r.flushdb()
 
     def tearDown(self):
-        phone_storage.delete_all()
+        self.r.flushdb()
 
     def test_user_exists(self):
         phone = '+79250741413'
@@ -52,19 +51,17 @@ class CodeSendingTests(APITestCase):
         self.assertEqual(r.status_code, 429)
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class PhoneConfirmTests(APITestCase):
     url = '/api/auth/users/'
-    phone_storage.connect()
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    phone_storage.connect(r)
+    tokens.connect(r)
 
     def setUp(self):
-        phone_storage.delete_all()
-        tokens.delete_all()
+        self.r.flushdb()
 
     def tearDown(self):
-        phone_storage.delete_all()
-        tokens.delete_all()
+        self.r.flushdb()
 
     def test_no_phone(self):
         r = self.client.post(self.url, {'phone': '', 'code': 228, 'is_new': False})

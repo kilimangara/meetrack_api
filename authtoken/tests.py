@@ -1,26 +1,23 @@
-from django.conf import settings
+import fakeredis
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from . import tokens
 
 User = get_user_model()
-REDIS_SETTINGS = settings.REDIS
-REDIS_SETTINGS['DB'] += 1
 
 
-@override_settings(REDIS=REDIS_SETTINGS)
 class AuthTests(APITestCase):
     url = '/api/account/'
-    tokens.connect()
+    r = fakeredis.FakeStrictRedis()
+    tokens.connect(r)
 
     def setUp(self):
         self.user = User.objects.create()
-        tokens.delete_all()
+        self.r.flushdb()
 
     def tearDown(self):
-        tokens.delete_all()
+        self.r.flushdb()
 
     @classmethod
     def different_token(cls, token):
