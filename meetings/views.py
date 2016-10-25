@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from msg_queue import queue
 
 from .models import Meeting
 from .serializers import MeetingSerializer, MembersSerializer
@@ -52,6 +53,7 @@ def single_meeting(request, pk):
         if not update_serializer.is_valid():
             return Response(update_serializer.errors, status.HTTP_400_BAD_REQUEST)
         update_serializer.save()
+        queue.send_to_meeting(meeting.id, {'type': 'completed'})
         serializer = MeetingSerializer(meeting, context={'king': user})
         return Response(serializer.data, status.HTTP_200_OK)
     else:
@@ -64,6 +66,7 @@ def single_meeting(request, pk):
             return Response(serializer.data, status.HTTP_200_OK)
         elif request.method == 'DELETE':
             meeting.remove_user(user.id)
+            queue.send_to_meeting(meeting.id, {'type': 'left', 'user_id': user.id})
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -83,8 +86,10 @@ def meeting_members(request, pk):
         if meeting.king != user:
             raise PermissionDenied()
         meeting.remove_user(user_id)
+        queue.send_to_meeting(meeting.id, {'type': 'excluded', 'user_id': user_id})
     elif request.method == 'PUT':
         if not user.inbound_blocks.filter(user_from_id=user_id).exists():
             meeting.add_user(user_id)
+            queue.send_to_meeting(meeting.id, {'type': 'invited', 'user_id': user_id})
     serializer = MeetingSerializer(meeting)
     return Response(serializer.data, status.HTTP_200_OK)

@@ -176,6 +176,16 @@ REDIS = {
     'DB': 1,
     'POOL_SIZE': 100
 }
+
+RABBITMQ = {
+    'URI': 'amqp://guest:guest@localhost:5672',
+    'EXCHANGE': 'meetrack',
+    'PUSHER_KEY': 'pusher',
+    'PUSHER_QUEUE': 'meetrack_pusher',
+    'SOCKET_KEY': 'socket',
+    'SOCKET_QUEUE': 'meetrack_socket',
+}
+
 # STORAGE
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

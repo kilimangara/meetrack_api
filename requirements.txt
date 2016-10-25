@@ -7,3 +7,4 @@ phonenumbers
 redis
 fakeredis
 django-bulk-update
+pika
