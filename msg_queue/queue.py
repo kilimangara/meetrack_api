@@ -27,14 +27,14 @@ def send(routing_key, msg):
 
 def send_to_meeting(mid, msg):
     send(SOCKET_KEY, {
-        'meeting_id': mid,
+        'meeting': mid,
         'msg': msg,
     })
 
 
 def send_to_users(users, msg):
     send(PUSHER_KEY, {
-        'user_ids': users,
+        'users': users,
         'msg': msg,
     })
 

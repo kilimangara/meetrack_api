@@ -42,14 +42,13 @@ class MeetingSerializer(serializers.ModelSerializer):
     king = serializers.SerializerMethodField(read_only=True)
 
     def get_king(self, obj):
-        king = self.context.get('king') or obj.king
-        return king.id
+        return self.context.get('king_id') or obj.king_id
 
     def create(self, validated_data):
         m = super().create(validated_data)
         user_ids = self.context['user_ids']
-        king = self.context['king']
-        members = [Member(user_id=uid, meeting=m, king=uid == king.id) for uid in user_ids]
+        king_id = self.context['king_id']
+        members = [Member(user_id=uid, meeting=m, king=uid == king_id) for uid in user_ids]
         Member.objects.bulk_create(members)
         return m
 

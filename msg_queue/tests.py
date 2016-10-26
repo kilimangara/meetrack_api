@@ -16,10 +16,9 @@ class RabbitTestClient(object):
     def get_msgs(self, queue):
         messages = []
         while True:
-            method_frame, header_frame, body = self.channel.basic_get(queue)
+            method_frame, header_frame, body = self.channel.basic_get(queue, no_ack=True)
             if body is not None:
                 messages.append(json.loads(body.decode()))
-                self.channel.basic_ack(method_frame.delivery_tag)
             else:
                 break
         return messages
@@ -32,4 +31,4 @@ class RabbitTestClient(object):
         self.channel.queue_purge(queue=SOCKET_QUEUE)
 
 
-rabbitmq = RabbitTestClient()
+queue_test_client = RabbitTestClient()
