@@ -173,6 +173,7 @@ SMS_AUTH = {
 REDIS = {
     'HOST': 'localhost',
     'PORT': '6379',
+    'PASSWORD': None,
     'DB': 1,
     'POOL_SIZE': 100
 }

@@ -12,7 +12,7 @@ def connect(conn=None):
     global r
     if conn is None:
         r = redis.StrictRedis(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                              port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+                              port=settings.REDIS['PORT'], db=settings.REDIS['DB'], password=settings.REDIS['PASSWORD'])
     else:
         r = conn
 
