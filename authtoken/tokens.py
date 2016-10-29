@@ -6,9 +6,6 @@ from django.conf import settings
 
 r = None
 
-TOKEN_KEY = 'token:{}'
-USER_KEY = 'user:{}'
-
 
 class TokenDoesNotExist(Exception):
     pass
@@ -26,17 +23,17 @@ def connect(conn=None):
     global r
     if conn is None:
         r = redis.StrictRedis(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                              port=settings.REDIS['PORT'], db=settings.REDIS['DB'])
+                              port=settings.REDIS['PORT'], db=settings.REDIS['DB'], password=settings.REDIS['PASSWORD'])
     else:
         r = conn
 
 
 def get_token_key(token):
-    return TOKEN_KEY.format(token)
+    return 'token:{}'.format(token)
 
 
 def get_user_key(user_id):
-    return USER_KEY.format(user_id)
+    return 'user:{}'.format(user_id)
 
 
 def authenticate(token):
