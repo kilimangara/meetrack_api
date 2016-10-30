@@ -7,8 +7,8 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
-from . import phone_storage
 from .phone_storage import Phone
+from . import phone_storage
 
 User = get_user_model()
 
@@ -17,7 +17,7 @@ User = get_user_model()
 class CodeSendingTests(APITestCase):
     url = '/api/auth/code/'
     r = fakeredis.FakeStrictRedis()
-    phone_storage.connect(r)
+    phone_storage.set_db(r)
 
     def setUp(self):
         self.r.flushdb()
@@ -54,8 +54,8 @@ class CodeSendingTests(APITestCase):
 class PhoneConfirmTests(APITestCase):
     url = '/api/auth/users/'
     r = fakeredis.FakeStrictRedis()
-    phone_storage.connect(r)
-    tokens.connect(r)
+    tokens.set_db(r)
+    phone_storage.set_db(r)
 
     def setUp(self):
         self.r.flushdb()

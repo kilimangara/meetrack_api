@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'registration',
     'meetings',
     'users',
+    'msg_queue',
 ]
 AUTH_USER_MODEL = 'users.User'
 
@@ -177,9 +178,11 @@ REDIS = {
     'DB': 1,
     'POOL_SIZE': 100
 }
-
 RABBITMQ = {
-    'URI': 'amqp://guest:guest@localhost:5672',
+    'HOST': 'localhost',
+    'PORT': 5672,
+    'user': 'guest',
+    'password': 'guest',
     'EXCHANGE': 'meetrack',
     'PUSHER_KEY': 'pusher',
     'PUSHER_QUEUE': 'meetrack_pusher',

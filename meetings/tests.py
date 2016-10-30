@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
-from .models import Meeting
 from msg_queue.tests import queue_test_client
+from .models import Meeting
 
 User = get_user_model()
 
@@ -12,7 +12,7 @@ User = get_user_model()
 class MeetingCreationTests(APITestCase):
     url = '/api/meetings/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def assert_lists_equal(self, l1, l2):
         self.assertEqual(sorted(l1), sorted(l2))
@@ -99,7 +99,7 @@ class MeetingCreationTests(APITestCase):
 class GetMeetingsTests(APITestCase):
     url = '/api/meetings/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def assert_ids_equal(self, data, expected):
         self.assertEqual(sorted([x['id'] for x in data]), sorted(expected))
@@ -145,7 +145,7 @@ class GetMeetingsTests(APITestCase):
 
 class GetSingleMeetingTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -181,7 +181,7 @@ class GetSingleMeetingTests(APITestCase):
 
 class MeetingInviteTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -274,7 +274,7 @@ class MeetingInviteTests(APITestCase):
 
 class MeetingExcludeTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -356,7 +356,7 @@ class MeetingExcludeTests(APITestCase):
 
 class MeetingLeaveTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -420,7 +420,7 @@ class MeetingLeaveTests(APITestCase):
 
 class MeetingCompleteTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')

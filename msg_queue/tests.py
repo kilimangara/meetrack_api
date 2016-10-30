@@ -2,6 +2,7 @@ import json
 
 import pika
 from django.conf import settings
+from pika import credentials
 
 EXCHANGE = settings.RABBITMQ['EXCHANGE']
 PUSHER_QUEUE = settings.RABBITMQ['PUSHER_QUEUE']
@@ -10,7 +11,10 @@ SOCKET_QUEUE = settings.RABBITMQ['SOCKET_QUEUE']
 
 class RabbitTestClient(object):
     def __init__(self):
-        self.connection = pika.BlockingConnection(pika.URLParameters(settings.RABBITMQ['URI']))
+        creds = credentials.PlainCredentials(username=settings.RABBITMQ['user'], password=settings.RABBITMQ['password'])
+        params = pika.ConnectionParameters(host=settings.RABBITMQ['HOST'], port=settings.RABBITMQ['PORT'],
+                                           credentials=creds)
+        self.connection = pika.BlockingConnection(params)
         self.channel = self.connection.channel()
 
     def get_msgs(self, queue):

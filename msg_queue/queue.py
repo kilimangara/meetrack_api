@@ -1,5 +1,6 @@
 import pika
 from pika.exceptions import ConnectionClosed
+from pika import credentials
 import json
 from django.conf import settings
 
@@ -12,7 +13,10 @@ channel = None
 
 def connect():
     global connection, channel
-    connection = pika.BlockingConnection(pika.URLParameters(settings.RABBITMQ['URI']))
+    creds = credentials.PlainCredentials(username=settings.RABBITMQ['user'], password=settings.RABBITMQ['password'])
+    params = pika.ConnectionParameters(host=settings.RABBITMQ['HOST'], port=settings.RABBITMQ['PORT'],
+                                       credentials=creds)
+    connection = pika.BlockingConnection(params)
     channel = connection.channel()
 
 

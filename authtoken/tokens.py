@@ -1,10 +1,14 @@
 import binascii
 import os
 
-import redis
-from django.conf import settings
+from redis_app.redis import get_instance
 
-r = None
+redis = get_instance()
+
+
+def set_db(db):
+    global redis
+    redis = db
 
 
 class TokenDoesNotExist(Exception):
@@ -19,15 +23,6 @@ def generate_token():
     return binascii.hexlify(os.urandom(20)).decode()
 
 
-def connect(conn=None):
-    global r
-    if conn is None:
-        r = redis.StrictRedis(max_connections=settings.REDIS['POOL_SIZE'], host=settings.REDIS['HOST'],
-                              port=settings.REDIS['PORT'], db=settings.REDIS['DB'], password=settings.REDIS['PASSWORD'])
-    else:
-        r = conn
-
-
 def get_token_key(token):
     return 'token:{}'.format(token)
 
@@ -38,7 +33,7 @@ def get_user_key(user_id):
 
 def authenticate(token):
     token_key = get_token_key(token)
-    user_id = int(r.get(token_key) or 0)
+    user_id = int(redis.get(token_key) or 0)
     if not user_id:
         raise AuthenticationFailed()
     return user_id
@@ -46,11 +41,11 @@ def authenticate(token):
 
 def delete(user_id):
     user_key = get_user_key(user_id)
-    token = (r.get(user_key) or b'').decode()
+    token = (redis.get(user_key) or b'').decode()
     if not token:
         return
     token_key = get_token_key(token)
-    r.delete(user_key, token_key)
+    redis.delete(user_key, token_key)
 
 
 def create(user_id):
@@ -58,11 +53,8 @@ def create(user_id):
     user_key = get_user_key(user_id)
     token = generate_token()
     token_key = get_token_key(token)
-    pipe = r.pipeline()
+    pipe = redis.pipeline()
     pipe.set(user_key, token)
     pipe.set(token_key, user_id)
     pipe.execute()
     return token
-
-
-connect()

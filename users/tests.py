@@ -10,7 +10,7 @@ User = get_user_model()
 class BlacklistGetTests(APITestCase):
     url = '/api/blacklist/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -34,7 +34,7 @@ class BlacklistGetTests(APITestCase):
 class BlacklistAddTests(APITestCase):
     url = '/api/blacklist/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -63,7 +63,7 @@ class BlacklistAddTests(APITestCase):
 class BlackListDeleteTests(APITestCase):
     url = '/api/blacklist/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -96,7 +96,7 @@ class BlackListDeleteTests(APITestCase):
 class ContactsGetTests(APITestCase):
     url = '/api/contacts/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -120,7 +120,7 @@ class ContactsGetTests(APITestCase):
 class ContactsImportTests(APITestCase):
     url = '/api/contacts/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741413')
@@ -188,7 +188,7 @@ class ContactsImportTests(APITestCase):
 class ContactsDeleteTests(APITestCase):
     url = '/api/contacts/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def test_success(self):
         u = User.objects.create(phone='+79250741413')
@@ -210,7 +210,7 @@ class ContactsDeleteTests(APITestCase):
 class UserRepresentationTests(APITestCase):
     url = '/api/users/{}/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.viewer = User.objects.create(phone='+79250741413')
@@ -260,7 +260,7 @@ class UserRepresentationTests(APITestCase):
 class AccountTests(APITestCase):
     url = '/api/account/'
     r = fakeredis.FakeStrictRedis()
-    tokens.connect(r)
+    tokens.set_db(r)
 
     def setUp(self):
         self.name = 'hello'
