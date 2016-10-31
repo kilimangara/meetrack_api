@@ -1,8 +1,8 @@
-import pika
-from pika.exceptions import ConnectionClosed
-from pika import credentials
 import json
+
+import pika
 from django.conf import settings
+from pika import credentials
 
 EXCHANGE = settings.RABBITMQ['EXCHANGE']
 PUSHER_KEY = settings.RABBITMQ['PUSHER_KEY']
@@ -24,7 +24,7 @@ def send(routing_key, msg):
     body = json.dumps(msg)
     try:
         channel.publish(EXCHANGE, routing_key, body)
-    except ConnectionClosed:
+    except:
         connect()
         channel.publish(EXCHANGE, routing_key, body)
 

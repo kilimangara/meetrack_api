@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'common_fields',
+    'redis_app',
     'authtoken',
     'registration',
     'meetings',
@@ -176,7 +177,6 @@ REDIS = {
     'PORT': '6379',
     'PASSWORD': None,
     'DB': 1,
-    'POOL_SIZE': 100
 }
 RABBITMQ = {
     'HOST': 'localhost',
