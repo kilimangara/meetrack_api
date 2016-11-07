@@ -61,3 +61,6 @@ class PhoneStorage(object):
 
     def delete(self):
         self.r.delete(self.code_key, self.attempts_key)
+
+
+connect()

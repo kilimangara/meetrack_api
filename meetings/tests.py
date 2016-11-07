@@ -256,8 +256,7 @@ class MeetingInviteTests(APITestCase):
         self.assertNotIn(self.u3, self.m.users.all())
         self.assertIn(self.u2, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
-        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': 'invited', 'data': {'user': self.u2.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_yourself(self):
         self.m.members.create(user=self.u)
@@ -340,8 +339,7 @@ class MeetingExcludeTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
-        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': 'excluded', 'data': {'user': self.u3.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_yourself(self):
         self.m.members.create(user=self.u)
@@ -415,6 +413,7 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(r.status_code, 204)
         self.assertEqual(self.m.king_id, self.u2.id)
         self.assertNotIn(self.u, self.m.users.all())
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_last(self):
         self.m.members.create(user=self.u, king=True)

@@ -65,8 +65,8 @@ def single_meeting(request, pk):
             serializer = MeetingSerializer(meeting)
             return Response(serializer.data, status.HTTP_200_OK)
         elif request.method == 'DELETE':
-            exists = meeting.remove_user(user.id)
-            if exists:
+            removed, meeting_exists = meeting.remove_user(user.id)
+            if removed and meeting_exists and not meeting.completed:
                 queue.send_to_meeting(meeting.id, 'left', {'user': user.id, 'king': meeting.king_id})
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
@@ -86,11 +86,11 @@ def meeting_members(request, pk):
     if request.method == 'DELETE':
         if user.id != meeting.king_id:
             raise PermissionDenied()
-        meeting.remove_user(user_id)
-        queue.send_to_meeting(meeting.id, 'excluded', {'user': user_id})
+        removed, meeting_exists = meeting.remove_user(user_id)
+        if removed and meeting_exists:
+            queue.send_to_meeting(meeting.id, 'excluded', {'user': user_id})
     elif request.method == 'PUT':
-        if not user.inbound_blocks.filter(user_from_id=user_id).exists():
-            meeting.add_user(user_id)
+        if not user.inbound_blocks.filter(user_from_id=user_id).exists() and meeting.add_user(user_id):
             queue.send_to_meeting(meeting.id, 'invited', {'user': user_id})
     serializer = MeetingSerializer(meeting)
     return Response(serializer.data, status.HTTP_200_OK)

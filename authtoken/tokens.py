@@ -66,3 +66,6 @@ def create(user_id):
     pipe.set(token_key, user_id)
     pipe.execute()
     return token
+
+
+connect()

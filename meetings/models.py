@@ -25,21 +25,23 @@ class Meeting(models.Model):
             memberships__meeting=self, memberships__king=True).values_list('id', flat=True).first()
 
     def remove_user(self, user_id):
-        exists = True
+        meeting_exists = True
         with atomic():
             if self.members.filter(user_id=user_id, king=True).exists():
                 user_ids = self.members.exclude(user_id=user_id).values_list('user_id', flat=True)
                 if user_ids:
                     new_king_id = random.choice(user_ids)
                     self.members.filter(user_id=new_king_id).update(king=True)
-            self.members.filter(user_id=user_id).delete()
+            deleted_count, _ = self.members.filter(user_id=user_id).delete()
+            removed = bool(deleted_count)
             if not self.members.exists():
                 self.delete()
-                exists = False
-        return exists
+                meeting_exists = False
+        return removed, meeting_exists
 
     def add_user(self, user_id):
-        self.members.get_or_create(user_id=user_id)
+        _, created = self.members.get_or_create(user_id=user_id)
+        return created
 
     def __str__(self):
         return str(self.id)
