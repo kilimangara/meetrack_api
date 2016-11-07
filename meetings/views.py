@@ -53,7 +53,7 @@ def single_meeting(request, pk):
         if not update_serializer.is_valid():
             return Response(update_serializer.errors, status.HTTP_400_BAD_REQUEST)
         update_serializer.save()
-        queue.send_to_meeting(meeting.id, {'type': 'completed'})
+        queue.send_to_meeting(meeting.id, 'completed')
         serializer = MeetingSerializer(meeting, context={'king_id': user.id})
         return Response(serializer.data, status.HTTP_200_OK)
     else:
@@ -67,7 +67,7 @@ def single_meeting(request, pk):
         elif request.method == 'DELETE':
             exists = meeting.remove_user(user.id)
             if exists:
-                queue.send_to_meeting(meeting.id, {'type': 'left', 'user': user.id, 'king': meeting.king_id})
+                queue.send_to_meeting(meeting.id, 'left', {'user': user.id, 'king': meeting.king_id})
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -87,10 +87,10 @@ def meeting_members(request, pk):
         if user.id != meeting.king_id:
             raise PermissionDenied()
         meeting.remove_user(user_id)
-        queue.send_to_meeting(meeting.id, {'type': 'excluded', 'user': user_id})
+        queue.send_to_meeting(meeting.id, 'excluded', {'user': user_id})
     elif request.method == 'PUT':
         if not user.inbound_blocks.filter(user_from_id=user_id).exists():
             meeting.add_user(user_id)
-            queue.send_to_meeting(meeting.id, {'type': 'invited', 'user': user_id})
+            queue.send_to_meeting(meeting.id, 'invited', {'user': user_id})
     serializer = MeetingSerializer(meeting)
     return Response(serializer.data, status.HTTP_200_OK)

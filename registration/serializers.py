@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, Throttled
 from common_fields.serializers import PhoneNumberField
 
-from .phone_storage import Phone, PhoneDoesNotExist
+from .phone_storage import PhoneStorage, PhoneDoesNotExist
 
 User = get_user_model()
 
@@ -34,7 +34,7 @@ class SendPhoneSerializer(serializers.Serializer):
             raise SendingError("Service response has incorrect status code", r)
 
     def validate(self, attrs):
-        phone = Phone(attrs['phone'])
+        phone = PhoneStorage(attrs['phone'])
         count = phone.get_attempts()
         if count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
             raise Throttled()
@@ -43,7 +43,7 @@ class SendPhoneSerializer(serializers.Serializer):
     def save_code(self, code=None):
         if code is None:
             code = self.generate_code()
-        phone = Phone(self.validated_data['phone'])
+        phone = PhoneStorage(self.validated_data['phone'])
         phone.set_code(code, time=settings.SMS_AUTH['CODE_LIFE_TIME'])
         phone.increment_attempts(time=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
         self.validated_data['code'] = code
@@ -60,7 +60,7 @@ class ConfirmPhoneSerializer(SendPhoneSerializer):
         code = attrs['code']
         if settings.DEBUG and code == settings.SMS_AUTH['DEBUG_CODE']:
             return attrs
-        phone = Phone(phone_number)
+        phone = PhoneStorage(phone_number)
         try:
             real_code = phone.get_code()
         except PhoneDoesNotExist:

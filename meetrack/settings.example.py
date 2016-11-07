@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'common_fields',
-    'redis_app',
     'authtoken',
     'registration',
     'meetings',

@@ -10,7 +10,7 @@ User = get_user_model()
 class AuthTests(APITestCase):
     url = '/api/account/'
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
 
     def setUp(self):
         self.user = User.objects.create()

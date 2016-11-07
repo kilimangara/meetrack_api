@@ -3,8 +3,9 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
-from msg_queue.tests import queue_test_client
+from msg_queue.tests import QueueTestConsumer
 from .models import Meeting
+from msg_queue import queue
 
 User = get_user_model()
 
@@ -12,7 +13,7 @@ User = get_user_model()
 class MeetingCreationTests(APITestCase):
     url = '/api/meetings/'
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
 
     def assert_lists_equal(self, l1, l2):
         self.assertEqual(sorted(l1), sorted(l2))
@@ -99,7 +100,7 @@ class MeetingCreationTests(APITestCase):
 class GetMeetingsTests(APITestCase):
     url = '/api/meetings/'
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
 
     def assert_ids_equal(self, data, expected):
         self.assertEqual(sorted([x['id'] for x in data]), sorted(expected))
@@ -145,7 +146,7 @@ class GetMeetingsTests(APITestCase):
 
 class GetSingleMeetingTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -181,7 +182,9 @@ class GetSingleMeetingTests(APITestCase):
 
 class MeetingInviteTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
+    queue.connect(r)
+    queue_test_consumer = QueueTestConsumer(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -191,10 +194,10 @@ class MeetingInviteTests(APITestCase):
         self.u3 = User.objects.create(phone='+79250741413')
         self.m = Meeting.objects.create()
         self.url = '/api/meetings/{}/users/'.format(self.m.id)
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def tearDown(self):
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def assert_lists_equal(self, l1, l2):
         self.assertEqual(sorted(l1), sorted(l2))
@@ -223,7 +226,7 @@ class MeetingInviteTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_not_king(self):
         self.m.members.create(user=self.u)
@@ -232,8 +235,8 @@ class MeetingInviteTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'invited', 'user': self.u3.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'invited', 'data': {'user': self.u3.id}}])
 
     def test_king(self):
         self.m.members.create(user=self.u, king=True)
@@ -242,8 +245,8 @@ class MeetingInviteTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'invited', 'user': self.u3.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'invited', 'data': {'user': self.u3.id}}])
 
     def test_already_invited(self):
         self.m.members.create(user=self.u)
@@ -253,8 +256,8 @@ class MeetingInviteTests(APITestCase):
         self.assertNotIn(self.u3, self.m.users.all())
         self.assertIn(self.u2, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'invited', 'user': self.u2.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'invited', 'data': {'user': self.u2.id}}])
 
     def test_yourself(self):
         self.m.members.create(user=self.u)
@@ -262,7 +265,7 @@ class MeetingInviteTests(APITestCase):
         r = self.client.put(self.url, data={'user': self.u.id})
         self.assertEqual(r.status_code, 400)
         self.assertIn('user', r.data)
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_user_does_not_exist(self):
         self.m.members.create(user=self.u)
@@ -274,7 +277,9 @@ class MeetingInviteTests(APITestCase):
 
 class MeetingExcludeTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
+    queue.connect(r)
+    queue_test_consumer = QueueTestConsumer(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -284,10 +289,10 @@ class MeetingExcludeTests(APITestCase):
         self.u3 = User.objects.create(phone='+79250741413')
         self.m = Meeting.objects.create()
         self.url = '/api/meetings/{}/users/'.format(self.m.id)
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def tearDown(self):
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def assert_lists_equal(self, l1, l2):
         self.assertEqual(sorted(l1), sorted(l2))
@@ -315,7 +320,7 @@ class MeetingExcludeTests(APITestCase):
         r = self.client.delete(self.url, data={'user': self.u3.id})
         self.assertEqual(r.status_code, 403)
         self.assertIn(self.u3, self.m.users.all())
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_success(self):
         self.m.members.create(user=self.u, king=True)
@@ -325,8 +330,8 @@ class MeetingExcludeTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'excluded', 'user': self.u3.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'excluded', 'data': {'user': self.u3.id}}])
 
     def test_already_excluded(self):
         self.m.members.create(user=self.u, king=True)
@@ -335,8 +340,8 @@ class MeetingExcludeTests(APITestCase):
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'excluded', 'user': self.u3.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'excluded', 'data': {'user': self.u3.id}}])
 
     def test_yourself(self):
         self.m.members.create(user=self.u)
@@ -344,7 +349,7 @@ class MeetingExcludeTests(APITestCase):
         r = self.client.delete(self.url, data={'user': self.u.id})
         self.assertEqual(r.status_code, 400)
         self.assertIn('user', r.data)
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_user_does_not_exist(self):
         self.m.members.create(user=self.u)
@@ -356,7 +361,9 @@ class MeetingExcludeTests(APITestCase):
 
 class MeetingLeaveTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
+    queue.connect(r)
+    queue_test_consumer = QueueTestConsumer(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -366,10 +373,10 @@ class MeetingLeaveTests(APITestCase):
         self.u3 = User.objects.create(phone='+79250741413')
         self.m = Meeting.objects.create()
         self.url = '/api/meetings/{}/'.format(self.m.id)
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def tearDown(self):
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def assert_lists_equal(self, l1, l2):
         self.assertEqual(sorted(l1), sorted(l2))
@@ -381,8 +388,8 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(r.status_code, 204)
         self.assertEqual(self.m.king_id, self.u2.id)
         self.assertNotIn(self.u, self.m.users.all())
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'left', 'user': self.u.id, 'king': self.u2.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'left', 'data': {'user': self.u.id, 'king': self.u2.id}}])
 
     def test_king(self):
         self.m.members.create(user=self.u, king=True)
@@ -391,8 +398,8 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(r.status_code, 204)
         self.assertEqual(self.m.king_id, self.u2.id)
         self.assertNotIn(self.u, self.m.users.all())
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'left', 'user': self.u.id, 'king': self.u2.id}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'left', 'data': {'user': self.u.id, 'king': self.u2.id}}])
 
     def test_not_member(self):
         self.m.members.create(user=self.u2, king=True)
@@ -415,12 +422,14 @@ class MeetingLeaveTests(APITestCase):
         with self.assertRaises(Meeting.DoesNotExist):
             self.m.refresh_from_db()
         self.assertEqual(r.status_code, 204)
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
 
 class MeetingCompleteTests(APITestCase):
     r = fakeredis.FakeStrictRedis()
-    tokens.set_db(r)
+    tokens.connect(r)
+    queue.connect(r)
+    queue_test_consumer = QueueTestConsumer(r)
 
     def setUp(self):
         self.u = User.objects.create(phone='+79250741414')
@@ -429,17 +438,17 @@ class MeetingCompleteTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.m = Meeting.objects.create()
         self.url = '/api/meetings/{}/'.format(self.m.id)
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def tearDown(self):
-        queue_test_client.clean()
+        self.queue_test_consumer.clean()
 
     def test_not_king(self):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         r = self.client.patch(self.url, {'completed': True})
         self.assertEqual(r.status_code, 403)
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_not_member(self):
         self.m.members.create(user=self.u2, king=True)
@@ -452,7 +461,7 @@ class MeetingCompleteTests(APITestCase):
         r = self.client.patch(self.url, {'completed': False})
         self.assertEqual(r.status_code, 400)
         self.assertIn('completed', r.data)
-        self.assertEqual(queue_test_client.get_meeting_msgs(), [])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_success(self):
         self.m.members.create(user=self.u, king=True)
@@ -463,5 +472,5 @@ class MeetingCompleteTests(APITestCase):
         self.assertEqual(r.data['id'], self.m.id)
         self.assertTrue(r.data['completed'])
         self.assertTrue(self.m.completed)
-        self.assertEqual(queue_test_client.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'msg': {'type': 'completed'}}])
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
+                         [{'meeting': self.m.id, 'type': 'completed', 'data': {}}])

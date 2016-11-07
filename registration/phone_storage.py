@@ -1,23 +1,29 @@
-from redis_app.redis import get_instance
+import redis
+from django.conf import settings
 
-redis = get_instance()
+client = None
 
 
-def set_db(db):
-    global redis
-    redis = db
+def connect(fake_client=None):
+    global client
+    if fake_client is not None:
+        client = fake_client
+    else:
+        client = redis.StrictRedis(host=settings.REDIS['HOST'],
+                                   port=settings.REDIS['PORT'], db=settings.REDIS['DB'],
+                                   password=settings.REDIS['PASSWORD'])
 
 
 class PhoneDoesNotExist(Exception):
     pass
 
 
-class Phone(object):
+class PhoneStorage(object):
     CODE_KEY = 'phone:{}:code'
     ATTEMPTS_KEY = 'phone:{}:attempts'
 
     def __init__(self, phone):
-        self.r = redis
+        self.r = client
         self.phone = phone
         self.code_key = self.CODE_KEY.format(phone)
         self.attempts_key = self.ATTEMPTS_KEY.format(phone)

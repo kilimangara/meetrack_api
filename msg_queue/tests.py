@@ -1,38 +1,31 @@
 import json
 
-import pika
+import redis
 from django.conf import settings
-from pika import credentials
 
-EXCHANGE = settings.RABBITMQ['EXCHANGE']
-PUSHER_QUEUE = settings.RABBITMQ['PUSHER_QUEUE']
-SOCKET_QUEUE = settings.RABBITMQ['SOCKET_QUEUE']
+from .queue import SOCKET_QUEUE, PUSHER_QUEUE
 
 
-class RabbitTestClient(object):
-    def __init__(self):
-        creds = credentials.PlainCredentials(username=settings.RABBITMQ['user'], password=settings.RABBITMQ['password'])
-        params = pika.ConnectionParameters(host=settings.RABBITMQ['HOST'], port=settings.RABBITMQ['PORT'],
-                                           credentials=creds)
-        self.connection = pika.BlockingConnection(params)
-        self.channel = self.connection.channel()
+class QueueTestConsumer(object):
+    def __init__(self, redis_client=None):
+        if redis_client is not None:
+            self.r = redis_client
+        else:
+            self.r = redis.StrictRedis(host=settings.REDIS['HOST'],
+                                       port=settings.REDIS['PORT'], db=settings.REDIS['DB'],
+                                       password=settings.REDIS['PASSWORD'])
 
     def get_msgs(self, queue):
         messages = []
-        while True:
-            method_frame, header_frame, body = self.channel.basic_get(queue, no_ack=True)
-            if body is not None:
-                messages.append(json.loads(body.decode()))
-            else:
-                break
+        body = self.r.rpop(queue)
+        while body is not None:
+            messages.append(json.loads(body.decode()))
+            body = self.r.rpop(queue)
         return messages
 
     def get_meeting_msgs(self):
         return self.get_msgs(SOCKET_QUEUE)
 
     def clean(self):
-        self.channel.queue_purge(queue=PUSHER_QUEUE)
-        self.channel.queue_purge(queue=SOCKET_QUEUE)
-
-
-queue_test_client = RabbitTestClient()
+        self.r.delete(PUSHER_QUEUE)
+        self.r.delete(SOCKET_QUEUE)

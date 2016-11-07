@@ -1,14 +1,22 @@
 import binascii
 import os
 
-from redis_app.redis import get_instance
+import redis
+from django.conf import settings
 
-redis = get_instance()
+client = None
 
 
-def set_db(db):
-    global redis
-    redis = db
+def connect(fake_client=None):
+    global client
+
+    global client
+    if fake_client is not None:
+        client = fake_client
+    else:
+        client = redis.StrictRedis(host=settings.REDIS['HOST'],
+                                   port=settings.REDIS['PORT'], db=settings.REDIS['DB'],
+                                   password=settings.REDIS['PASSWORD'])
 
 
 class TokenDoesNotExist(Exception):
@@ -33,7 +41,7 @@ def get_user_key(user_id):
 
 def authenticate(token):
     token_key = get_token_key(token)
-    user_id = int(redis.get(token_key) or 0)
+    user_id = int(client.get(token_key) or 0)
     if not user_id:
         raise AuthenticationFailed()
     return user_id
@@ -41,11 +49,11 @@ def authenticate(token):
 
 def delete(user_id):
     user_key = get_user_key(user_id)
-    token = (redis.get(user_key) or b'').decode()
+    token = (client.get(user_key) or b'').decode()
     if not token:
         return
     token_key = get_token_key(token)
-    redis.delete(user_key, token_key)
+    client.delete(user_key, token_key)
 
 
 def create(user_id):
@@ -53,7 +61,7 @@ def create(user_id):
     user_key = get_user_key(user_id)
     token = generate_token()
     token_key = get_token_key(token)
-    pipe = redis.pipeline()
+    pipe = client.pipeline()
     pipe.set(user_key, token)
     pipe.set(token_key, user_id)
     pipe.execute()
