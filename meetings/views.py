@@ -12,6 +12,9 @@ from .serializers import MeetingsListTypeSerializer, MeetingUpdateSerializer, Fo
 
 User = get_user_model()
 
+meeting_not_found = NotFound("Meeting not found.")
+user_not_king = PermissionDenied("Only king of meeting have permission to perform this action.")
+
 
 @api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
@@ -46,9 +49,9 @@ def single_meeting(request, pk):
         try:
             meeting = user.meetings.get(id=pk, completed=False)
         except Meeting.DoesNotExist:
-            raise NotFound()
+            raise meeting_not_found
         if user.id != meeting.king_id:
-            raise PermissionDenied()
+            raise user_not_king
         update_serializer = MeetingUpdateSerializer(meeting, data=request.data, partial=True)
         if not update_serializer.is_valid():
             return Response(update_serializer.errors, status.HTTP_400_BAD_REQUEST)
@@ -60,7 +63,7 @@ def single_meeting(request, pk):
         try:
             meeting = user.meetings.get(id=pk)
         except Meeting.DoesNotExist:
-            raise NotFound()
+            raise meeting_not_found
         if request.method == 'GET':
             serializer = MeetingSerializer(meeting)
             return Response(serializer.data, status.HTTP_200_OK)
@@ -78,14 +81,14 @@ def meeting_members(request, pk):
     try:
         meeting = user.meetings.get(id=pk, completed=False)
     except Meeting.DoesNotExist:
-        raise NotFound()
+        raise meeting_not_found
     id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
     if not id_serializer.is_valid():
         return Response(id_serializer.errors, status.HTTP_400_BAD_REQUEST)
     user_id = id_serializer.validated_data['user']
     if request.method == 'DELETE':
         if user.id != meeting.king_id:
-            raise PermissionDenied()
+            raise user_not_king
         removed, meeting_exists = meeting.remove_user(user_id)
         if removed and meeting_exists:
             queue.send_to_meeting(meeting.id, 'excluded', {'user': user_id})

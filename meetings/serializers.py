@@ -74,8 +74,3 @@ class MeetingUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
         fields = ['completed']
-        extra_kwargs = {
-            'completed': {
-                'required': False
-            }
-        }

@@ -6,14 +6,14 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from authtoken import tokens
-from .serializers import SendPhoneSerializer, ConfirmPhoneSerializer, NewUserSerializer
+from .serializers import PhoneSerializer, ConfirmPhoneSerializer, NewUserSerializer
 
 User = get_user_model()
 
 
 @api_view(['POST'])
 def send_code(request):
-    serializer = SendPhoneSerializer(data=request.data)
+    serializer = PhoneSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
     serializer.save_code()
@@ -34,7 +34,7 @@ def login(request):
         try:
             user_id = User.objects.only('id').get(phone=phone).id
         except User.DoesNotExist:
-            raise NotFound()
+            raise NotFound("User does not exist.")
     else:
         user_serializer = NewUserSerializer(data=request.data)
         if not user_serializer.is_valid():

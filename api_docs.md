@@ -47,7 +47,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Request was throttled."
+      detail: "Too many phone confirmation attempts."
     }
     ```
     
@@ -100,7 +100,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "User does not exist."
     }
     ```
     
@@ -109,7 +109,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Request was throttled."
+      detail: "Too many phone confirmation attempts."
     }
     ```
     
@@ -170,7 +170,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Request was throttled."
+      detail: "Too many phone confirmation attempts."
     }
     ```
                   
@@ -439,7 +439,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "User does not exist."
     }
     ```
     
@@ -919,7 +919,7 @@
     
 * **Success Response:**
 
-    **Code 204:**
+    **Code 200:**
     
     **Content:** 
     ```javascript
@@ -1025,7 +1025,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "Meeting does not exist."
     }
     ```
     
@@ -1098,7 +1098,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "Meeting does not exist."
     }
     ```
     
@@ -1172,7 +1172,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "You do not have permission to perform this action."
+      detail: "Only king of meeting have permission to perform this action."
     }
     ```
     
@@ -1181,7 +1181,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "Meeting does not exist."
     }
     ```
     
@@ -1231,7 +1231,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "Meeting does not exist."
     }
     ```
     
@@ -1307,7 +1307,7 @@
     **Content:** 
     ```javascript
     {
-      detail: "You do not have permission to perform this action."
+      detail: "Only king of meeting have permission to perform this action."
     }
     ```
     
@@ -1316,6 +1316,6 @@
     **Content:** 
     ```javascript
     {
-      detail: "Not found."
+      detail: "Meeting does not exist."
     }
     ```

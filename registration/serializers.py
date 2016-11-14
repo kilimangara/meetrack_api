@@ -13,13 +13,14 @@ from .phone_storage import PhoneStorage, PhoneDoesNotExist
 User = get_user_model()
 
 
-class SendingError(Exception):
+class SMSSendingError(Exception):
     pass
 
 
-class SendPhoneSerializer(serializers.Serializer):
+class PhoneSerializer(serializers.Serializer):
     CODE_LENGTH = 5
     phone = PhoneNumberField()
+    throttled_error = Throttled(detail="Too many phone confirmation attempts.")
 
     def generate_code(self):
         return ''.join(random.choice(string.digits) for _ in range(self.CODE_LENGTH))
@@ -31,13 +32,13 @@ class SendPhoneSerializer(serializers.Serializer):
                           data={'To': phone, 'From': settings.SMS_AUTH['FROM_NUMBER'], 'Body': code},
                           auth=(settings.SMS_AUTH['ACCOUNT_SID'], settings.SMS_AUTH['AUTH_TOKEN']))
         if r.status_code != 201:
-            raise SendingError("Service response has incorrect status code", r)
+            raise SMSSendingError("Service response has incorrect status code", r)
 
     def validate(self, attrs):
         phone = PhoneStorage(attrs['phone'])
         count = phone.get_attempts()
         if count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
-            raise Throttled()
+            raise self.throttled_error
         return attrs
 
     def save_code(self, code=None):
@@ -50,9 +51,9 @@ class SendPhoneSerializer(serializers.Serializer):
         return code
 
 
-class ConfirmPhoneSerializer(SendPhoneSerializer):
-    validation_error = ValidationError({'code': ['Code is invalid.']})
-    code = serializers.CharField(max_length=SendPhoneSerializer.CODE_LENGTH, min_length=SendPhoneSerializer.CODE_LENGTH)
+class ConfirmPhoneSerializer(PhoneSerializer):
+    code_error = ValidationError({'code': ['Code is invalid.']})
+    code = serializers.CharField(max_length=PhoneSerializer.CODE_LENGTH, min_length=PhoneSerializer.CODE_LENGTH)
     is_new = serializers.BooleanField(default=False, write_only=True)
 
     def validate(self, attrs):
@@ -64,13 +65,13 @@ class ConfirmPhoneSerializer(SendPhoneSerializer):
         try:
             real_code = phone.get_code()
         except PhoneDoesNotExist:
-            raise self.validation_error
+            raise self.code_error
         count = phone.get_attempts()
         if count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
-            raise Throttled()
+            raise self.throttled_error
         if code != real_code:
             phone.increment_attempts(time=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
-            raise self.validation_error
+            raise self.code_error
         phone.delete()
         return attrs
 
