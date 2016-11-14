@@ -14,7 +14,7 @@ def connect(fake_client=None):
                                    password=settings.REDIS['PASSWORD'])
 
 
-class PhoneDoesNotExist(Exception):
+class CodeDoesNotExist(Exception):
     pass
 
 
@@ -31,17 +31,17 @@ class PhoneStorage(object):
     def get_attempts(self):
         return int(self.r.get(self.attempts_key) or 0)
 
-    def set_attempts(self, attempts, time=None):
+    def set_attempts(self, attempts, lifetime=None):
         pipe = self.r.pipeline()
         pipe.set(self.attempts_key, attempts)
-        if time is not None:
-            pipe.expire(self.attempts_key, time)
+        if lifetime is not None:
+            pipe.expire(self.attempts_key, lifetime)
         pipe.execute()
 
-    def increment_attempts(self, time=None):
+    def increment_attempts(self, lifetime=None):
         count = self.get_attempts()
         if not count:
-            self.set_attempts(1, time)
+            self.set_attempts(1, lifetime)
         else:
             self.r.incr(self.attempts_key)
         return count + 1
@@ -49,18 +49,18 @@ class PhoneStorage(object):
     def get_code(self):
         code = self.r.get(self.code_key)
         if not code:
-            raise PhoneDoesNotExist()
+            raise CodeDoesNotExist()
         return code.decode()
 
-    def set_code(self, code, time=None):
+    def set_code(self, code, lifetime=None):
         pipe = self.r.pipeline()
         pipe.set(self.code_key, code)
-        if time is not None:
-            pipe.expire(self.code_key, time)
+        if lifetime is not None:
+            pipe.expire(self.code_key, lifetime)
         pipe.execute()
 
-    def delete(self):
-        self.r.delete(self.code_key, self.attempts_key)
+    def delete_code(self):
+        self.r.delete(self.code_key)
 
 
 connect()

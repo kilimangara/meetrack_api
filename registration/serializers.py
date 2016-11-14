@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, Throttled
 from common_fields.serializers import PhoneNumberField
 
-from .phone_storage import PhoneStorage, PhoneDoesNotExist
+from .phone_storage import PhoneStorage, CodeDoesNotExist
 
 User = get_user_model()
 
@@ -25,9 +25,8 @@ class PhoneSerializer(serializers.Serializer):
     def generate_code(self):
         return ''.join(random.choice(string.digits) for _ in range(self.CODE_LENGTH))
 
-    def send_code(self):
+    def send_code(self, code):
         phone = self.validated_data['phone']
-        code = self.validated_data['code']
         r = requests.post(settings.SMS_AUTH['REQUEST_URL'],
                           data={'To': phone, 'From': settings.SMS_AUTH['FROM_NUMBER'], 'Body': code},
                           auth=(settings.SMS_AUTH['ACCOUNT_SID'], settings.SMS_AUTH['AUTH_TOKEN']))
@@ -45,9 +44,8 @@ class PhoneSerializer(serializers.Serializer):
         if code is None:
             code = self.generate_code()
         phone = PhoneStorage(self.validated_data['phone'])
-        phone.set_code(code, time=settings.SMS_AUTH['CODE_LIFE_TIME'])
-        phone.increment_attempts(time=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
-        self.validated_data['code'] = code
+        phone.set_code(code, lifetime=settings.SMS_AUTH['CODE_LIFE_TIME'])
+        phone.increment_attempts(lifetime=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
         return code
 
 
@@ -64,16 +62,22 @@ class ConfirmPhoneSerializer(PhoneSerializer):
         phone = PhoneStorage(phone_number)
         try:
             real_code = phone.get_code()
-        except PhoneDoesNotExist:
+        except CodeDoesNotExist:
             raise self.code_error
         count = phone.get_attempts()
         if count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
             raise self.throttled_error
         if code != real_code:
-            phone.increment_attempts(time=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
+            phone.increment_attempts(lifetime=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
             raise self.code_error
-        phone.delete()
+        phone.delete_code()
         return attrs
+
+    def reuse_code(self):
+        code = self.validated_data['code']
+        phone_number = self.validated_data['phone']
+        phone = PhoneStorage(phone_number)
+        phone.set_code(code)
 
 
 class NewUserSerializer(serializers.ModelSerializer):

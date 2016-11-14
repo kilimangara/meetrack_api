@@ -1,6 +1,6 @@
 **Send code**
 ----
-  Sends sms with secure code and checks whether the maximum number of attempts has been exceeded. Code expires after some time, now five minutes. Returns whether the user with this phone number is registered. This method does not create a user. After sending a new code, previous codes become invalid.
+  Sends sms with secret code and checks whether the maximum number of attempts has been exceeded. Code expires after some time, now five minutes. Returns whether the user with this phone number is registered. This method does not create a user. After sending a new code, previous codes become invalid.
 
 * **URL:**
   /api/auth/code/
@@ -54,7 +54,7 @@
     
 **Confirm code, user exists**
 ----
-  Sign in user by phone and code and checks whether the maximum number of attempts has been exceeded. The user with this phone must be registered in the system. In debug mode code '00000' always valid. Methods generates new token for user, after that previous user tokens become invalid, to prevent multi-device support.
+  Sign in user by phone and code and checks whether the maximum number of attempts has been exceeded. The user with this phone must be registered in the system. If user does not exist, secret code remains valid until user sign up. In debug mode code '00000' always valid. Methods generates new token for user, after that previous user tokens become invalid, to prevent multi-device support.
 
 * **URL:**
   /api/auth/users/

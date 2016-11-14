@@ -16,9 +16,9 @@ def send_code(request):
     serializer = PhoneSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
-    serializer.save_code()
+    code = serializer.save_code()
     if not hasattr(settings, 'TEST_SMS'):
-        serializer.send_code()
+        serializer.send_code(code)
     phone = serializer.validated_data['phone']
     is_new = not User.objects.filter(phone=phone).exists()
     return Response({'is_new': is_new}, status.HTTP_201_CREATED)
@@ -34,6 +34,8 @@ def login(request):
         try:
             user_id = User.objects.only('id').get(phone=phone).id
         except User.DoesNotExist:
+            # save same code without lifetime
+            phone_serializer.reuse_code()
             raise NotFound("User does not exist.")
     else:
         user_serializer = NewUserSerializer(data=request.data)
