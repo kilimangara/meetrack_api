@@ -43,4 +43,5 @@ def login(request):
             return Response(user_serializer.errors, status.HTTP_400_BAD_REQUEST)
         user_id = user_serializer.save().id
     token = tokens.create(user_id)
+    phone_serializer.deactivate_code()
     return Response({'token': token, 'user_id': user_id}, status.HTTP_201_CREATED)

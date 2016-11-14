@@ -70,17 +70,24 @@ class ConfirmPhoneSerializer(PhoneSerializer):
         if code != real_code:
             phone.increment_attempts(lifetime=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
             raise self.code_error
-        phone.delete_code()
         return attrs
+
+    def deactivate_code(self):
+        phone_number = self.validated_data['phone']
+        PhoneStorage(phone_number).delete_code()
 
     def reuse_code(self):
         code = self.validated_data['code']
         phone_number = self.validated_data['phone']
-        phone = PhoneStorage(phone_number)
-        phone.set_code(code)
+        PhoneStorage(phone_number).set_code(code)
 
 
 class NewUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['name', 'phone', 'avatar']
+        extra_kwargs = {
+            'avatar': {
+                'required': False
+            }
+        }

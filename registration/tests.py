@@ -195,9 +195,8 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         r = self.client.post(self.url, {'phone': phone_number, 'code': '11111', 'is_new': False})
         self.assertEqual(r.status_code, 404)
-        with open('registration/test_files/file1.png', 'rb') as f:
-            r = self.client.post(
-                self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa', 'avatar': f})
+        r = self.client.post(
+            self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa'})
         self.assertEqual(r.status_code, 201)
         user_id = r.data['user_id']
         self.assertEqual(tokens.authenticate(r.data['token']), user_id)

@@ -137,6 +137,8 @@
     
     name: [string]
     
+    **Optional:**
+    
     avatar: [file]
      
 * **Success Response:**
