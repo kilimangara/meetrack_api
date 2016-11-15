@@ -14,8 +14,8 @@ class Meeting(models.Model):
     title = models.CharField(max_length=FIELD_MAX_LENGTH)
     description = models.TextField(null=True)
     logo = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
-    created = models.DateTimeField(auto_now_add=True)
-    time = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    end_at = models.DateTimeField(null=True)
     completed = models.BooleanField(default=False)
     users = models.ManyToManyField('users.User', related_name='meetings', through='Member')
 

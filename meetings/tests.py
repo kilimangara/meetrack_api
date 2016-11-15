@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 import fakeredis
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
@@ -88,7 +90,7 @@ class MeetingCreationTests(APITestCase):
         users = [self.u2.id, self.u3.id]
         self.u2.blocks.create(user_to=self.u)
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'description': 'hhh'})
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
@@ -96,6 +98,20 @@ class MeetingCreationTests(APITestCase):
         self.assertEqual(r.data['king'], self.u.id)
         self.assert_lists_equal(r.data['users'], [self.u3.id, self.u.id])
         self.assertNotIn(self.u2.id, r.data['users'])
+        self.assertEqual(m.description, 'hhh')
+
+    def test_with_end_at(self):
+        users = [self.u2.id, self.u.id, self.u3.id]
+        end_at = timezone.now()
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'end_at': end_at})
+        mid = r.data['id']
+        m = Meeting.objects.get(id=mid)
+        self.assertEqual(m.king_id, self.u.id)
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data['king'], self.u.id)
+        self.assert_lists_equal(r.data['users'], users)
+        self.assertEqual(m.end_at, m.end_at)
 
 
 class GetMeetingsTests(APITestCase):

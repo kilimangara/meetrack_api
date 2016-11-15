@@ -54,10 +54,13 @@ class MeetingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Meeting
-        fields = ['id', 'title', 'description', 'logo', 'time', 'created', 'completed', 'king', 'users']
-        read_only_fields = ['created', 'completed']
+        fields = ['id', 'title', 'description', 'logo', 'end_at', 'created_at', 'completed', 'king', 'users']
+        read_only_fields = ['created_at', 'completed']
         extra_kwargs = {
             'description': {
+                'required': False
+            },
+            'end_at': {
                 'required': False
             }
         }

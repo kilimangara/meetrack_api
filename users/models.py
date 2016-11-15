@@ -15,7 +15,7 @@ FIELD_MAX_LENGTH = 255
 class User(models.Model):
     name = models.CharField(max_length=FIELD_MAX_LENGTH)
     phone = models.CharField(max_length=FIELD_MAX_LENGTH, unique=True)
-    created = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     hidden_phone = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
     blocked_users = models.ManyToManyField('self', related_name='blocked_me', symmetrical=False, through='BlackList',

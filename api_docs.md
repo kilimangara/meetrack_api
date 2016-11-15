@@ -207,7 +207,7 @@
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
-      created: "2016-10-22T18:22:45.121940Z",
+      created_at: "2016-10-22T18:22:45.121940Z",
       hidden_phone: false, 
       avatar: "http://localhost:8000/path.png"
     }
@@ -262,7 +262,7 @@
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
-      created: "2016-10-22T18:22:45.121940Z",
+      created_at: "2016-10-22T18:22:45.121940Z",
       hidden_phone: false, 
       avatar: "http://localhost:8000/path.png"
     }
@@ -844,7 +844,7 @@
     
     "users" param can contain creator or not, it doesn't matter. 
     
-    time: [time]
+    end_at: [datetime]
     
     
 * **Success Response:**
@@ -858,8 +858,8 @@
         title: "fff", 
         description: null,
         logo: "http://localhost:8000/path1.png"
-        time: null,
-        created: "2016-10-22T18:22:45.121940Z",
+        end_at: null,
+        created_at: "2016-10-22T18:22:45.121940Z",
         completed: false,
         king: 5,
         users: [
@@ -880,7 +880,7 @@
       title: ["This field may not be blank.", "This field is required."],
       description: ["This field may not be blank."],
       logo: ["No file was submitted.", "Upload a valid image. The file you uploaded was either not an image or a corrupted image."],
-      time: [ "Datetime has wrong format. Use one of these formats instead: YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z]."]
+      end_at: [ "Datetime has wrong format. Use one of these formats instead: YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z]."]
     }
     ```
     
@@ -931,8 +931,8 @@
             title: "fff", 
             description: null,
             logo: "http://localhost:8000/path1.png"
-            time: "2016-10-22T18:23:45.121940Z",
-            created: "2016-10-22T18:22:45.121940Z",
+            end_at: "2016-10-22T18:23:45.121940Z",
+            created_at: "2016-10-22T18:22:45.121940Z",
             completed: true,
             king: 6,
             users: [
@@ -945,8 +945,8 @@
             title: "fff", 
             description: "sss",
             logo: "http://localhost:8000/path1.png"
-            time: null,
-            created: "2016-10-22T18:22:45.121940Z",
+            end_at: null,
+            created_at: "2016-10-22T18:22:45.121940Z",
             completed: false,
             king: 7,
             users: [
@@ -1000,8 +1000,8 @@
         title: "fff", 
         description: null,
         logo: "http://localhost:8000/path1.png"
-        time: "2016-10-22T18:23:45.121940Z",
-        created: "2016-10-22T18:22:45.121940Z",
+        end_at: "2016-10-22T18:23:45.121940Z",
+        created_at: "2016-10-22T18:22:45.121940Z",
         completed: false,
         king: 6,
         users: [
@@ -1064,8 +1064,8 @@
         title: "fff", 
         description: "sss",
         logo: "http://localhost:8000/path1.png"
-        time: "2016-10-22T18:55:45.121940Z",
-        created: "2016-10-22T18:22:45.121940Z",
+        end_at: "2016-10-22T18:55:45.121940Z",
+        created_at: "2016-10-22T18:22:45.121940Z",
         completed: false,
         king: 5,
         users: [
@@ -1137,8 +1137,8 @@
         title: "fff", 
         description: "sss",
         logo: "http://localhost:8000/path1.png"
-        time: null,
-        created: "2016-10-22T18:22:45.121940Z",
+        end_at: null,
+        created_at: "2016-10-22T18:22:45.121940Z",
         completed: false,
         king: 6,
         users: [
@@ -1272,8 +1272,8 @@
         title: "fff", 
         description: "sss",
         logo: "http://localhost:8000/path1.png"
-        time: null,
-        created: "2016-10-22T18:22:45.121940Z",
+        end_at: null,
+        created_at: "2016-10-22T18:22:45.121940Z",
         completed: false,
         king: 6,
         users: [
