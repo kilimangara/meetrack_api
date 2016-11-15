@@ -18,6 +18,8 @@ class Meeting(models.Model):
     end_at = models.DateTimeField(null=True)
     completed = models.BooleanField(default=False)
     users = models.ManyToManyField('users.User', related_name='meetings', through='Member')
+    destination_lat = models.FloatField(default=0.0)
+    destination_lon = models.FloatField(default=0.0)
 
     @property
     def king_id(self):

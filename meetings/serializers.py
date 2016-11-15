@@ -40,6 +40,11 @@ class MembersSerializer(serializers.Serializer):
 
 class MeetingSerializer(serializers.ModelSerializer):
     king = serializers.SerializerMethodField(read_only=True)
+    destination = serializers.SerializerMethodField(read_only=True)
+
+    @classmethod
+    def get_destination(cls, obj):
+        return {'lat': obj.destination_lat, 'lon': obj.destination_lon}
 
     def get_king(self, obj):
         return self.context.get('king_id') or obj.king_id
@@ -54,7 +59,8 @@ class MeetingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Meeting
-        fields = ['id', 'title', 'description', 'logo', 'end_at', 'created_at', 'completed', 'king', 'users']
+        fields = ['id', 'title', 'description', 'logo', 'end_at', 'created_at', 'completed', 'king', 'users',
+                  'destination', 'destination_lat', 'destination_lon']
         read_only_fields = ['created_at', 'completed']
         extra_kwargs = {
             'description': {
@@ -62,6 +68,14 @@ class MeetingSerializer(serializers.ModelSerializer):
             },
             'end_at': {
                 'required': False
+            },
+            'destination_lat': {
+                'write_only': True,
+                'required': True,
+            },
+            'destination_lon': {
+                'write_only': True,
+                'required': True,
             }
         }
 

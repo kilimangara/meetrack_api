@@ -836,6 +836,10 @@
     
     logo: [file]
     
+    destination_lat: [float]
+    
+    destination_lon: [float]
+    
     **Optional:**
     
     description: [string]
@@ -865,7 +869,11 @@
         users: [
             5,
             6
-        ]
+        ],
+        destination: {
+            lat: 2.233,
+            lon: 44.334,
+        }
     }
     ```
  
@@ -938,7 +946,11 @@
             users: [
                 5,
                 6
-            ]
+            ],
+            destination: {
+                lat: 2.233,
+                lon: 44.334,
+            }
         },
         {
             id: 32, 
@@ -952,7 +964,11 @@
             users: [
                 7,
                 8
-            ]
+            ],
+            destination: {
+                lat: 2.233,
+                lon: 44.334,
+            }
         }
     ]
     ```
@@ -1007,7 +1023,11 @@
         users: [
             5,
             6
-        ]
+        ],
+        destination: {
+            lat: 2.233,
+            lon: 44.334,
+        }
     }
     ```
  
@@ -1071,7 +1091,11 @@
         users: [
             5,
             6
-        ]
+        ],
+        destination: {
+            lat: 2.233,
+            lon: 44.334,
+        }
     }
     ```
  
@@ -1145,7 +1169,11 @@
             5,
             6,
             7
-        ]
+        ],
+        destination: {
+            lat: 2.233,
+            lon: 44.334,
+        }
     }
     ```
  
@@ -1280,7 +1308,11 @@
             5,
             6,
             7
-        ]
+        ],
+        destination: {
+            lat: 2.233,
+            lon: 44.334,
+        }
     }
     ```
  

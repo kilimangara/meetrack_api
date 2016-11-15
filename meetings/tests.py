@@ -30,19 +30,29 @@ class MeetingCreationTests(APITestCase):
 
     def test_without_title(self):
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': [self.u2.id]})
+            r = self.client.post(self.url, data={'logo': f, 'users': [self.u2.id], 'destination_lat': 1.1,
+                                                 'destination_lon': 1.1})
         self.assertEqual(r.status_code, 400)
         self.assertIn('title', r.data)
 
+    def test_without_destination(self):
+        with open('meetings/test_files/file1.png', 'rb') as f:
+            r = self.client.post(self.url, data={'title': 'sss', 'logo': f, 'users': [self.u2.id]})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('destination_lon', r.data)
+        self.assertIn('destination_lat', r.data)
+
     def test_without_logo(self):
-        r = self.client.post(self.url, data={'logo': '', 'users': [self.u2.id], 'title': '222'})
+        r = self.client.post(self.url, data={'logo': '', 'users': [self.u2.id], 'title': '222', 'destination_lat': 1.1,
+                                             'destination_lon': 1.1})
         self.assertEqual(r.status_code, 400)
         self.assertIn('logo', r.data)
 
     def test_users_with_creator(self):
         users = [self.u2.id, self.u.id, self.u3.id]
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'destination_lat': 1.1,
+                                                 'destination_lon': 1.1})
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
@@ -53,7 +63,8 @@ class MeetingCreationTests(APITestCase):
     def test_completed(self):
         users = [self.u2.id, self.u.id, self.u3.id]
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'completed': True})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'completed': True,
+                                                 'destination_lat': 1.1, 'destination_lon': 1.1})
         self.assertEqual(r.status_code, 201)
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
@@ -65,7 +76,8 @@ class MeetingCreationTests(APITestCase):
     def test_users_without_creator(self):
         users = [self.u2.id, self.u3.id]
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'destination_lat': 1.1,
+                                                 'destination_lon': 1.1})
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
@@ -78,7 +90,8 @@ class MeetingCreationTests(APITestCase):
         non_registered = [228, 322]
         users = registered + non_registered
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf'})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'destination_lat': 1.1,
+                                                 'destination_lon': 1.1})
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
@@ -90,7 +103,8 @@ class MeetingCreationTests(APITestCase):
         users = [self.u2.id, self.u3.id]
         self.u2.blocks.create(user_to=self.u)
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'description': 'hhh'})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'description': 'hhh',
+                                                 'destination_lat': 1.1, 'destination_lon': 1.1})
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
@@ -104,7 +118,8 @@ class MeetingCreationTests(APITestCase):
         users = [self.u2.id, self.u.id, self.u3.id]
         end_at = timezone.now()
         with open('meetings/test_files/file1.png', 'rb') as f:
-            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'end_at': end_at})
+            r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'end_at': end_at,
+                                                 'destination_lat': 1.1, 'destination_lon': 1.1})
         mid = r.data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
