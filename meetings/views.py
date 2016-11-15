@@ -14,6 +14,10 @@ User = get_user_model()
 
 meeting_not_found = NotFound("Meeting not found.")
 user_not_king = PermissionDenied("Only king of meeting have permission to perform this action.")
+INVITED_MSG = 'USER_INVITED'
+COMPLETED_MSG = 'MEETING_COMPLETED'
+EXCLUDED_MSG = 'USER_EXCLUDED'
+LEFT_MSG = 'USER_LEFT'
 
 
 @api_view(['POST', 'GET'])
@@ -57,7 +61,7 @@ def single_meeting(request, pk):
         if not update_serializer.is_valid():
             return Response(update_serializer.errors, status.HTTP_400_BAD_REQUEST)
         update_serializer.save()
-        queue.send_to_meeting(meeting.id, 'completed')
+        queue.send_to_meeting(meeting.id, COMPLETED_MSG)
         serializer = MeetingSerializer(meeting, context={'king_id': user.id})
         return Response(serializer.data, status.HTTP_200_OK)
     else:
@@ -71,7 +75,7 @@ def single_meeting(request, pk):
         elif request.method == 'DELETE':
             removed, meeting_exists = meeting.remove_user(user.id)
             if removed and meeting_exists and not meeting.completed:
-                queue.send_to_meeting(meeting.id, 'left', {'user': user.id, 'king': meeting.king_id})
+                queue.send_to_meeting(meeting.id, LEFT_MSG, {'user': user.id, 'king': meeting.king_id})
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -92,9 +96,9 @@ def meeting_members(request, pk):
             raise user_not_king
         removed, meeting_exists = meeting.remove_user(user_id)
         if removed and meeting_exists:
-            queue.send_to_meeting(meeting.id, 'excluded', {'user': user_id})
+            queue.send_to_meeting(meeting.id, EXCLUDED_MSG, {'user': user_id})
     elif request.method == 'PUT':
         if not user.inbound_blocks.filter(user_from_id=user_id).exists() and meeting.add_user(user_id):
-            queue.send_to_meeting(meeting.id, 'invited', {'user': user_id})
+            queue.send_to_meeting(meeting.id, INVITED_MSG, {'user': user_id})
     serializer = MeetingSerializer(meeting)
     return Response(serializer.data, status.HTTP_200_OK)
