@@ -129,8 +129,8 @@ class GetMeetingsTests(APITestCase):
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 200)
         self.assert_ids_equal(r.data, [m1.id])
-        r = self.client.get(self.url, data={'all': True})
-        self.assert_ids_equal(r.data, [m1.id, m2.id])
+        r = self.client.get(self.url, data={'completed': False})
+        self.assert_ids_equal(r.data, [m1.id])
 
     def test_not_king(self):
         m1 = Meeting.objects.create()

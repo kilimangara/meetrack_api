@@ -163,7 +163,7 @@
       code: ["Code is invalid."],
       phone: ["Invalid phone number.", "user with this phone already exists."],
       name: ["This field is required."],
-      avatar: ["No file was submitted.", "Upload a valid image. The file you uploaded was either not an image or a corrupted image."]
+      avatar: ["Upload a valid image. The file you uploaded was either not an image or a corrupted image."]
     }
     ```
                   
@@ -912,9 +912,9 @@
     
     **Optional:**
     
-    all: [boolean]
+    completed: [boolean]
     
-    If "all" param is true, response will be contain completed and uncompleted meetings. Else only uncompleted. Default value is false.
+    If "completed" param is true, response will be contain completed meetings. Else only uncompleted. Default value is false.
     
 * **Data Params:**
     None

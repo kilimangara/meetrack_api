@@ -20,7 +20,7 @@ class ForeignUserIdSerializer(serializers.Serializer):
 
 
 class MeetingsListTypeSerializer(serializers.Serializer):
-    all = serializers.BooleanField(default=False)
+    completed = serializers.BooleanField(default=False)
 
 
 class MembersSerializer(serializers.Serializer):
