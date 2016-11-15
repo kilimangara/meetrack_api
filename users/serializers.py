@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common_fields.serializers import PhoneNumberField
+from base_app.serializers import PhoneNumberField
 from .models import FIELD_MAX_LENGTH
 
 User = get_user_model()

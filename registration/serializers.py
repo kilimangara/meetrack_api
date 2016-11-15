@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, Throttled
-from common_fields.serializers import PhoneNumberField
+from base_app.serializers import PhoneNumberField
 
 from .phone_storage import PhoneStorage, CodeDoesNotExist
 
@@ -18,35 +18,20 @@ class SMSSendingError(Exception):
 
 
 class PhoneSerializer(serializers.Serializer):
-    CODE_LENGTH = 5
     phone = PhoneNumberField()
-    throttled_error = Throttled(detail="Too many phone confirmation attempts.")
 
-    def generate_code(self):
-        return ''.join(random.choice(string.digits) for _ in range(self.CODE_LENGTH))
 
-    def send_code(self, code):
-        phone = self.validated_data['phone']
-        r = requests.post(settings.SMS_AUTH['REQUEST_URL'],
-                          data={'To': phone, 'From': settings.SMS_AUTH['FROM_NUMBER'], 'Body': code},
-                          auth=(settings.SMS_AUTH['ACCOUNT_SID'], settings.SMS_AUTH['AUTH_TOKEN']))
-        if r.status_code != 201:
-            raise SMSSendingError("Service response has incorrect status code", r)
+class CodeSerializer(serializers.Serializer):
+    CODE_LENGTH = 5
+    code = serializers.CharField(max_length=CODE_LENGTH, min_length=CODE_LENGTH)
 
-    def validate(self, attrs):
-        phone = PhoneStorage(attrs['phone'])
-        count = phone.get_attempts()
-        if count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
-            raise self.throttled_error
-        return attrs
+    @classmethod
+    def generate_code(cls):
+        return ''.join(random.choice(string.digits) for _ in range(cls.CODE_LENGTH))
 
-    def save_code(self, code=None):
-        if code is None:
-            code = self.generate_code()
-        phone = PhoneStorage(self.validated_data['phone'])
-        phone.set_code(code, lifetime=settings.SMS_AUTH['CODE_LIFE_TIME'])
-        phone.increment_attempts(lifetime=settings.SMS_AUTH['ATTEMPTS_LIFE_TIME'])
-        return code
+
+class IsNewUserSerializer(serializers.Serializer):
+    is_new = serializers.BooleanField(default=False, write_only=True)
 
 
 class ConfirmPhoneSerializer(PhoneSerializer):

@@ -14,13 +14,12 @@ def connect(fake_client=None):
                                    password=settings.REDIS['PASSWORD'])
 
 
-class CodeDoesNotExist(Exception):
-    pass
-
-
 class PhoneStorage(object):
     CODE_KEY = 'phone:{}:code'
     ATTEMPTS_KEY = 'phone:{}:attempts'
+
+    class DoesNotExist(Exception):
+        pass
 
     def __init__(self, phone):
         self.r = client
@@ -49,7 +48,7 @@ class PhoneStorage(object):
     def get_code(self):
         code = self.r.get(self.code_key)
         if not code:
-            raise CodeDoesNotExist()
+            raise self.DoesNotExist()
         return code.decode()
 
     def set_code(self, code, lifetime=None):

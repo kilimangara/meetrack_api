@@ -7,8 +7,8 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
-from .phone_storage import PhoneStorage
 from . import phone_storage
+from .phone_storage import PhoneStorage
 
 User = get_user_model()
 
@@ -115,7 +115,7 @@ class PhoneConfirmTests(APITestCase):
         self.assertEqual(r.status_code, 201)
         self.assertNotEqual(r.data['token'], token)
         self.assertEqual(r.data['user_id'], u.id)
-        with self.assertRaises(phone_storage.CodeDoesNotExist):
+        with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()
 
     def test_sign_in_new_token(self):
@@ -127,7 +127,7 @@ class PhoneConfirmTests(APITestCase):
         self.assertEqual(r.status_code, 201)
         self.assertEqual(tokens.authenticate(r.data['token']), u.id)
         self.assertEqual(r.data['user_id'], u.id)
-        with self.assertRaises(phone_storage.CodeDoesNotExist):
+        with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()
 
     def test_sign_in_user_not_exists(self):
@@ -202,5 +202,5 @@ class PhoneConfirmTests(APITestCase):
         self.assertEqual(tokens.authenticate(r.data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)
-        with self.assertRaises(phone_storage.CodeDoesNotExist):
+        with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()

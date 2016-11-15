@@ -5,4 +5,3 @@ ENV
 __pycache__
 tmp.py
 .idea
-settings.py

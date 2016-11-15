@@ -70,6 +70,7 @@
     phone: [string]
     
     code: [alphanumeric]
+    
      
 * **Success Response:**
 
@@ -344,7 +345,7 @@
    
 *  **URL Params:**
 
-   users: [array]
+     users: [array]
     
 * **Data Params:**
   None
@@ -682,7 +683,7 @@
     
 **Add to contacts**
 ----
-  Imports a list of user contacts. Contact contains name and phone number. If user with such phone does not exist, contact is still saved for future use. Returns list of users added to the contacts.
+  Imports a list of user contacts. Contact contains name and phone number. If user with such phone does not exist, contact is still saved for future use. If any name from list longer than 255 chars, method returns error, therefore client should remove this contact from list before sending the request. Returns list of users added to the contacts.
 
 * **URL**
   /api/contacts/
