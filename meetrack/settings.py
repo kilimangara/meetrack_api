@@ -166,8 +166,8 @@ SMS_AUTH = {
     'AUTH_TOKEN': 'b3855a93c588996d3be0de9dba142d49',
     'FROM_NUMBER': '+12054154471',
     'ATTEMPTS_LIMIT': 5,
-    'CODE_LIFE_TIME': 5 * 60,
-    'ATTEMPTS_LIFE_TIME': 10,
+    'CODE_LIFETIME': 5 * 60,
+    'ATTEMPTS_LIFETIME': 10,
     'DEBUG_CODE': '00000',
 }
 
@@ -193,3 +193,7 @@ RABBITMQ = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STORAGE_URL = 'http://localhost:8000' + MEDIA_URL
+try:
+    from .local_settings import *
+except ImportError:
+    pass

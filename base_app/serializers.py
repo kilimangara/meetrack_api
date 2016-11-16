@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 class PhoneNumberField(serializers.CharField):
     default_error_messages = {
-        'invalid': _("Invalid phone number."),
+        'invalid': _("The phone number has incorrect format."),
     }
 
     def to_internal_value(self, data):

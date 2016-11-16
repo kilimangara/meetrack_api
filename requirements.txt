@@ -5,6 +5,6 @@ psycopg2
 djangorestframework
 phonenumbers
 redis
-fakeredis
+https://github.com/gazoon/fakeredis/archive/master.zip
 django-bulk-update
 pika

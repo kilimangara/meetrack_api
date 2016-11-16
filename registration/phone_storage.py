@@ -28,22 +28,25 @@ class PhoneStorage(object):
         self.attempts_key = self.ATTEMPTS_KEY.format(phone)
 
     def get_attempts(self):
-        return int(self.r.get(self.attempts_key) or 0)
+        pipe = self.r.pipeline()
+        pipe.get(self.attempts_key)
+        pipe.ttl(self.attempts_key)
+        results = pipe.execute()
+        attempts_count = int(results[0] or 0)
+        wait_time = results[1] if results[1] >= 0 else None
+        return attempts_count, wait_time
 
     def set_attempts(self, attempts, lifetime=None):
-        pipe = self.r.pipeline()
-        pipe.set(self.attempts_key, attempts)
-        if lifetime is not None:
-            pipe.expire(self.attempts_key, lifetime)
-        pipe.execute()
-
-    def increment_attempts(self, lifetime=None):
-        count = self.get_attempts()
-        if not count:
-            self.set_attempts(1, lifetime)
+        if lifetime is None:
+            self.r.set(self.attempts_key, attempts)
         else:
-            self.r.incr(self.attempts_key)
-        return count + 1
+            pipe = self.r.pipeline()
+            pipe.set(self.attempts_key, attempts)
+            pipe.expire(self.attempts_key, lifetime)
+            pipe.execute()
+
+    def increment_attempts(self):
+        return self.r.incr(self.attempts_key)
 
     def get_code(self):
         code = self.r.get(self.code_key)
@@ -52,11 +55,13 @@ class PhoneStorage(object):
         return code.decode()
 
     def set_code(self, code, lifetime=None):
-        pipe = self.r.pipeline()
-        pipe.set(self.code_key, code)
-        if lifetime is not None:
+        if lifetime is None:
+            self.r.set(self.code_key, code)
+        else:
+            pipe = self.r.pipeline()
+            pipe.set(self.code_key, code)
             pipe.expire(self.code_key, lifetime)
-        pipe.execute()
+            pipe.execute()
 
     def delete_code(self):
         self.r.delete(self.code_key)

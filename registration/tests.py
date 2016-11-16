@@ -8,6 +8,8 @@ from rest_framework.test import APITestCase
 
 from authtoken import tokens
 from . import phone_storage
+from .views import INVALID_PHONE_CODE, INVALID_PHONE_NUMBER, CONFIRM_ATTEMPTS_EXCEEDED
+from .views import USER_NOT_FOUND, USER_ALREADY_EXISTS, INVALID_REQUEST_DATA
 from .phone_storage import PhoneStorage
 
 User = get_user_model()
@@ -30,25 +32,25 @@ class CodeSendingTests(APITestCase):
         User.objects.create(phone=phone)
         r = self.client.post(self.url, {'phone': phone})
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['is_new'], False)
+        data = r.data['data']
+        self.assertEqual(data['is_new'], False)
 
     def test_new_user(self):
         phone = '+79250741413'
         r = self.client.post(self.url, {'phone': phone})
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['is_new'], True)
+        data = r.data['data']
+        self.assertEqual(data['is_new'], True)
 
     def test_empty(self):
         r = self.client.post(self.url, {'phone': ''})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_NUMBER)
 
-    def test_limit_exceeded(self):
-        phone_number = '+79250741413'
-        phone = PhoneStorage(phone_number)
-        phone.set_attempts(settings.SMS_AUTH['ATTEMPTS_LIMIT'])
-        r = self.client.post(self.url, {'phone': phone_number})
-        self.assertEqual(r.status_code, 429)
+    def test_incorrect(self):
+        r = self.client.post(self.url, {'phone': '+792507414132'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_NUMBER)
 
 
 class PhoneConfirmTests(APITestCase):
@@ -64,14 +66,14 @@ class PhoneConfirmTests(APITestCase):
         self.r.flushdb()
 
     def test_no_phone(self):
-        r = self.client.post(self.url, {'phone': '', 'code': 228, 'is_new': False})
+        r = self.client.post(self.url, {'phone': '', 'code': '11111', 'is_new': False})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_NUMBER)
 
     def test_no_code(self):
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '', 'is_new': False})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('code', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_CODE)
 
     def test_incorrect_code(self):
         phone_number = '+79250741413'
@@ -79,14 +81,14 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '21111', 'is_new': False})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('code', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_CODE)
 
     def test_another_phone_number(self):
         phone = PhoneStorage('+79250741413')
         phone.set_code('11111')
         r = self.client.post(self.url, {'phone': '+79250741412', 'code': '11111'})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('code', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_CODE)
 
     def test_limit_exceeded(self):
         phone_number = '+79250741413'
@@ -95,6 +97,7 @@ class PhoneConfirmTests(APITestCase):
         phone.set_attempts(settings.SMS_AUTH['ATTEMPTS_LIMIT'])
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': False})
         self.assertEqual(r.status_code, 429)
+        self.assertEqual(r.data['error']['type'], CONFIRM_ATTEMPTS_EXCEEDED)
 
     def test_expire(self):
         phone_number = '+79250741413'
@@ -103,18 +106,22 @@ class PhoneConfirmTests(APITestCase):
         time.sleep(1)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': False})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('code', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_CODE)
 
     def test_sign_in_token_exists(self):
         phone_number = '+79250741413'
         phone = PhoneStorage(phone_number)
         phone.set_code(code='11111')
         u = User.objects.create(phone=phone_number)
-        token = tokens.create(u.id)
+        old_token = tokens.create(u.id)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': False})
+        data = r.data['data']
         self.assertEqual(r.status_code, 201)
-        self.assertNotEqual(r.data['token'], token)
-        self.assertEqual(r.data['user_id'], u.id)
+        self.assertNotEqual(data['token'], old_token)
+        self.assertEqual(tokens.authenticate(data['token']), u.id)
+        with self.assertRaises(tokens.AuthenticationFailed):
+            tokens.authenticate(old_token)
+        self.assertEqual(data['user_id'], u.id)
         with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()
 
@@ -124,9 +131,10 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         u = User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': False})
+        data = r.data['data']
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(tokens.authenticate(r.data['token']), u.id)
-        self.assertEqual(r.data['user_id'], u.id)
+        self.assertEqual(tokens.authenticate(data['token']), u.id)
+        self.assertEqual(data['user_id'], u.id)
         with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()
 
@@ -136,6 +144,7 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': False})
         self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
         self.assertEqual('11111', phone.get_code())
 
     def test_sign_up_no_name(self):
@@ -144,7 +153,7 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': True, 'name': ''})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('name', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_REQUEST_DATA)
 
     def test_sign_up_user_exists(self):
         phone_number = '+79250741413'
@@ -152,8 +161,8 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': True, 'name': 'aa'})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('phone', r.data)
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.data['error']['type'], USER_ALREADY_EXISTS)
 
     def test_sign_up_ok(self):
         phone_number = '+79250741413'
@@ -167,8 +176,9 @@ class PhoneConfirmTests(APITestCase):
             r = self.client.post(
                 self.url, {'phone': '+79250741413', 'code': '11111', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 201)
-        user_id = r.data['user_id']
-        self.assertEqual(tokens.authenticate(r.data['token']), user_id)
+        data = r.data['data']
+        user_id = data['user_id']
+        self.assertEqual(tokens.authenticate(data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)
         self.assertIn(u, u1.contacted_users.all())
@@ -180,14 +190,15 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         u = User.objects.create(phone=phone_number)
         r = self.client.post(self.url, {'phone': phone_number, 'code': '11111', 'is_new': False})
+        data = r.data['data']
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(tokens.authenticate(r.data['token']), u.id)
-        self.assertEqual(r.data['user_id'], u.id)
+        self.assertEqual(tokens.authenticate(data['token']), u.id)
+        self.assertEqual(data['user_id'], u.id)
         with open('registration/test_files/file1.png', 'rb') as f:
             r = self.client.post(
                 self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 400)
-        self.assertIn('code', r.data)
+        self.assertEqual(r.data['error']['type'], INVALID_PHONE_CODE)
 
     def test_sign_up_after_unsuccess_sign_in(self):
         phone_number = '+79250741413'
@@ -195,11 +206,13 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         r = self.client.post(self.url, {'phone': phone_number, 'code': '11111', 'is_new': False})
         self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
         r = self.client.post(
             self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa'})
         self.assertEqual(r.status_code, 201)
-        user_id = r.data['user_id']
-        self.assertEqual(tokens.authenticate(r.data['token']), user_id)
+        data = r.data['data']
+        user_id = data['user_id']
+        self.assertEqual(tokens.authenticate(data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)
         with self.assertRaises(PhoneStorage.DoesNotExist):
