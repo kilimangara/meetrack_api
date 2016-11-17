@@ -1,12 +1,13 @@
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
+from base_app.error_types import USER_NOT_FOUND
+from base_app.response import SuccessResponse, ErrorResponse
+from base_app.serializers import ForeignUserIdSerializer
 from .serializers import AccountSerializer, UserSerializer
-from .serializers import ImportContactsSerializer, DeleteContactsSerializer, UserIdsSerializer, ForeignUserIdSerializer
+from .serializers import ImportContactsSerializer, DeleteContactsSerializer, UserIdsSerializer
 
 User = get_user_model()
 
@@ -17,27 +18,26 @@ def account(request):
     user = request.user
     if request.method == 'GET':
         serializer = AccountSerializer(user)
-        return Response(serializer.data, status.HTTP_200_OK)
+        return SuccessResponse(serializer.data, status.HTTP_200_OK)
     elif request.method == 'PATCH':
         serializer = AccountSerializer(user, data=request.data, partial=True)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status.HTTP_200_OK)
+        return SuccessResponse(serializer.data, status.HTTP_200_OK)
     elif request.method == 'DELETE':
         user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return SuccessResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def users_list(request):
     ids_serializer = UserIdsSerializer(data=request.query_params)
-    if not ids_serializer.is_valid():
-        return Response(ids_serializer.errors, status.HTTP_400_BAD_REQUEST)
-    users = ids_serializer.validated_data['users']
+    ids_serializer.is_valid(raise_exception=True)
+    user_ids = ids_serializer.validated_data['users']
+    users = User.objects.filter(id__in=user_ids).distinct('id')
     serializer = UserSerializer(users, context={'viewer': request.user}, many=True)
-    return Response(serializer.data, status.HTTP_200_OK)
+    return SuccessResponse(serializer.data, status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -46,9 +46,9 @@ def user_details(request, pk):
     try:
         user = User.objects.get(pk=pk)
     except User.DoesNotExist:
-        raise NotFound("User does not exist.")
+        return ErrorResponse(USER_NOT_FOUND, status.HTTP_404_NOT_FOUND, "User with such id does not exist.")
     serializer = UserSerializer(user, context={'viewer': request.user})
-    return Response(serializer.data, status.HTTP_200_OK)
+    return SuccessResponse(serializer.data, status.HTTP_200_OK)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -57,15 +57,16 @@ def blacklist(request):
     user = request.user
     if request.method != 'GET':
         id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
-        if not id_serializer.is_valid():
-            return Response(id_serializer.errors, status.HTTP_400_BAD_REQUEST)
+        id_serializer.is_valid(raise_exception=True)
         user_id = id_serializer.validated_data['user']
+        if not User.objects.filter(id=user_id).exists():
+            return ErrorResponse(USER_NOT_FOUND, status.HTTP_404_NOT_FOUND, "User with such id does not exist.")
         if request.method == 'PUT':
             user.add_to_blacklist(user_id)
         else:
             user.remove_from_blacklist(user_id)
     serializer = UserSerializer(user.blocked_users, context={'viewer': user}, many=True)
-    return Response(serializer.data, status.HTTP_200_OK)
+    return SuccessResponse(serializer.data, status.HTTP_200_OK)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -74,16 +75,14 @@ def contacts(request):
     user = request.user
     if request.method == 'PUT':
         contacts_serializer = ImportContactsSerializer(data=request.data, context={'user': user})
-        if not contacts_serializer.is_valid():
-            return Response(contacts_serializer.errors, status.HTTP_400_BAD_REQUEST)
+        contacts_serializer.is_valid(raise_exception=True)
         users = user.add_to_contacts(contacts_serializer.validated_data['phones'],
                                      contacts_serializer.validated_data['names'])
     else:
         if request.method == 'DELETE':
             phones_serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
-            if not phones_serializer.is_valid():
-                return Response(phones_serializer.errors, status.HTTP_400_BAD_REQUEST)
+            phones_serializer.is_valid(raise_exception=True)
             user.remove_from_contacts(phones_serializer.validated_data['phones'])
         users = user.contacted_users
     serializer = UserSerializer(users, context={'viewer': user}, many=True)
-    return Response(serializer.data, status.HTTP_200_OK)
+    return SuccessResponse(serializer.data, status.HTTP_200_OK)

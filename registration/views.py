@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 
 from authtoken import tokens
 from base_app.error_types import INVALID_PHONE_NUMBER, INVALID_PHONE_CODE, CONFIRM_ATTEMPTS_EXCEEDED
-from base_app.error_types import USER_NOT_FOUND, INVALID_REQUEST_DATA, USER_ALREADY_EXISTS
+from base_app.error_types import USER_NOT_FOUND, USER_ALREADY_EXISTS
 from base_app.response import SuccessResponse, ErrorResponse
 from .phone_storage import PhoneStorage
 from .serializers import PhoneSerializer, NewUserSerializer, CodeSerializer, IsNewUserSerializer
@@ -30,7 +30,7 @@ def send_sms_code(phone, code):
 def send_code(request):
     phone_serializer = PhoneSerializer(data=request.data)
     if not phone_serializer.is_valid():
-        return ErrorResponse(INVALID_PHONE_NUMBER, status.HTTP_400_BAD_REQUEST, phone_serializer.errors)
+        return ErrorResponse(INVALID_PHONE_NUMBER, status.HTTP_400_BAD_REQUEST, phone_serializer.errors_as_text)
     phone_number = phone_serializer.validated_data['phone']
     phone_storage = PhoneStorage(phone_number)
     code = CodeSerializer.generate_code()
@@ -51,11 +51,10 @@ def is_sign_up(request):
 @api_view(['POST'])
 def login(request):
     phone_serializer = PhoneSerializer(data=request.data)
-    if not phone_serializer.is_valid():
-        return ErrorResponse(INVALID_PHONE_NUMBER, status.HTTP_400_BAD_REQUEST, phone_serializer.errors)
+    phone_serializer.is_valid(raise_exception=True)
     code_serializer = CodeSerializer(data=request.data)
     if not code_serializer.is_valid():
-        return ErrorResponse(INVALID_PHONE_CODE, status.HTTP_400_BAD_REQUEST, code_serializer.errors)
+        return ErrorResponse(INVALID_PHONE_CODE, status.HTTP_400_BAD_REQUEST, code_serializer.errors_as_text)
     phone_number = phone_serializer.validated_data['phone']
     code = code_serializer.validated_data['code']
     phone_storage = PhoneStorage(phone_number)
@@ -63,19 +62,17 @@ def login(request):
         try:
             real_code = phone_storage.get_code()
         except PhoneStorage.DoesNotExist:
-            return ErrorResponse(INVALID_PHONE_CODE, status.HTTP_400_BAD_REQUEST,
-                                 description="Code does not exist or has expired.")
+            return ErrorResponse(INVALID_PHONE_CODE, status.HTTP_400_BAD_REQUEST, "Code does not exist or has expired.")
         attempts_count, wait_time = phone_storage.get_attempts()
         if attempts_count >= settings.SMS_AUTH['ATTEMPTS_LIMIT']:
             return ErrorResponse(CONFIRM_ATTEMPTS_EXCEEDED, status.HTTP_429_TOO_MANY_REQUESTS,
-                                 description="Try again later after {} seconds.".format(wait_time))
+                                 "Try again later after {} seconds.".format(wait_time))
         if code != real_code:
             if attempts_count == 0:
                 phone_storage.set_attempts(1, settings.SMS_AUTH['ATTEMPTS_LIFETIME'])
             else:
                 phone_storage.increment_attempts()
-            return ErrorResponse(INVALID_PHONE_CODE, status.HTTP_400_BAD_REQUEST,
-                                 description="The input code does not match.")
+            return ErrorResponse(INVALID_PHONE_CODE, status.HTTP_400_BAD_REQUEST, "The input code does not match.")
     if not is_sign_up(request):
         try:
             user_id = User.objects.only('id').get(phone=phone_number).id
@@ -83,14 +80,13 @@ def login(request):
             # save same code without lifetime
             phone_storage.set_code(code)
             return ErrorResponse(USER_NOT_FOUND, status.HTTP_404_NOT_FOUND,
-                                 description="User with such phone number does not registered.")
+                                 "User with such phone number does not registered.")
     else:
         user_serializer = NewUserSerializer(data=request.data)
-        if not user_serializer.is_valid():
-            return ErrorResponse(INVALID_REQUEST_DATA, status.HTTP_400_BAD_REQUEST, user_serializer.errors)
+        user_serializer.is_valid(raise_exception=True)
         if User.objects.filter(phone=phone_number).exists():
             return ErrorResponse(USER_ALREADY_EXISTS, status.HTTP_409_CONFLICT,
-                                 description="User with such phone number already registered in the system.")
+                                 "User with such phone number already registered in the system.")
         user_id = user_serializer.save().id
     token = tokens.create(user_id)
     phone_storage.delete_code()

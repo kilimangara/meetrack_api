@@ -20,24 +20,6 @@ class AccountSerializer(serializers.ModelSerializer):
 class UserIdsSerializer(serializers.Serializer):
     users = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
 
-    def to_internal_value(self, data):
-        v = super().to_internal_value(data)
-        user_ids = v['users']
-        v['users'] = User.objects.filter(id__in=user_ids).distinct('id')
-        return v
-
-
-class ForeignUserIdSerializer(serializers.Serializer):
-    user = serializers.IntegerField()
-
-    def validate_user(self, value):
-        viewer = self.context['viewer']
-        if viewer.id == value:
-            raise ValidationError("Can not do it with yourself.")
-        elif not User.objects.filter(id=value).exists():
-            raise ValidationError("User with this id does not exist.")
-        return value
-
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

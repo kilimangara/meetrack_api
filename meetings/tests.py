@@ -8,7 +8,7 @@ from authtoken import tokens
 from msg_queue.tests import QueueTestConsumer
 from .models import Meeting
 from msg_queue import queue
-from .views import LEFT_MSG, EXCLUDED_MSG, INVITED_MSG, COMPLETED_MSG
+from .views import USER_LEFT, USER_EXCLUDED, USER_INVITED, MEETING_COMPLETED
 
 User = get_user_model()
 
@@ -268,7 +268,7 @@ class MeetingInviteTests(APITestCase):
         self.assertIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': INVITED_MSG, 'data': {'user': self.u3.id}}])
+                         [{'meeting': self.m.id, 'type': USER_INVITED, 'data': {'user': self.u3.id}}])
 
     def test_king(self):
         self.m.members.create(user=self.u, king=True)
@@ -278,7 +278,7 @@ class MeetingInviteTests(APITestCase):
         self.assertIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': INVITED_MSG, 'data': {'user': self.u3.id}}])
+                         [{'meeting': self.m.id, 'type': USER_INVITED, 'data': {'user': self.u3.id}}])
 
     def test_already_invited(self):
         self.m.members.create(user=self.u)
@@ -362,7 +362,7 @@ class MeetingExcludeTests(APITestCase):
         self.assertNotIn(self.u3, self.m.users.all())
         self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': EXCLUDED_MSG, 'data': {'user': self.u3.id}}])
+                         [{'meeting': self.m.id, 'type': USER_EXCLUDED, 'data': {'user': self.u3.id}}])
 
     def test_already_excluded(self):
         self.m.members.create(user=self.u, king=True)
@@ -419,7 +419,7 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(self.m.king_id, self.u2.id)
         self.assertNotIn(self.u, self.m.users.all())
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': LEFT_MSG, 'data': {'user': self.u.id, 'king': self.u2.id}}])
+                         [{'meeting': self.m.id, 'type': USER_LEFT, 'data': {'user': self.u.id, 'king': self.u2.id}}])
 
     def test_king(self):
         self.m.members.create(user=self.u, king=True)
@@ -429,7 +429,7 @@ class MeetingLeaveTests(APITestCase):
         self.assertEqual(self.m.king_id, self.u2.id)
         self.assertNotIn(self.u, self.m.users.all())
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': LEFT_MSG, 'data': {'user': self.u.id, 'king': self.u2.id}}])
+                         [{'meeting': self.m.id, 'type': USER_LEFT, 'data': {'user': self.u.id, 'king': self.u2.id}}])
 
     def test_not_member(self):
         self.m.members.create(user=self.u2, king=True)
@@ -504,4 +504,4 @@ class MeetingCompleteTests(APITestCase):
         self.assertTrue(r.data['completed'])
         self.assertTrue(self.m.completed)
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
-                         [{'meeting': self.m.id, 'type': COMPLETED_MSG, 'data': {}}])
+                         [{'meeting': self.m.id, 'type': MEETING_COMPLETED, 'data': {}}])

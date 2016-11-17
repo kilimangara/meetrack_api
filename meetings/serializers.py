@@ -7,18 +7,6 @@ from .models import Meeting, Member
 User = get_user_model()
 
 
-class ForeignUserIdSerializer(serializers.Serializer):
-    user = serializers.IntegerField()
-
-    def validate_user(self, value):
-        viewer = self.context['viewer']
-        if viewer.id == value:
-            raise ValidationError("Can not do it with yourself.")
-        elif not User.objects.filter(id=value).exists():
-            raise ValidationError("User with this id does not exist.")
-        return value
-
-
 class MeetingsListTypeSerializer(serializers.Serializer):
     completed = serializers.BooleanField(default=False)
 

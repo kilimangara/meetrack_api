@@ -9,11 +9,24 @@ from base_app.serializers import PhoneNumberField
 User = get_user_model()
 
 
-class PhoneSerializer(serializers.Serializer):
+class ErrorToTextMixin(object):
+    @property
+    def errors_as_text(self):
+        assert isinstance(self, serializers.Serializer)
+        errors_list = []
+        for field, field_errors in self.errors.items():
+            if not field_errors:
+                continue
+            errors_list.append('{}: {}'.format(field, field_errors[0]))
+        text = ' '.join(errors_list)
+        return text
+
+
+class PhoneSerializer(serializers.Serializer, ErrorToTextMixin):
     phone = PhoneNumberField()
 
 
-class CodeSerializer(serializers.Serializer):
+class CodeSerializer(serializers.Serializer, ErrorToTextMixin):
     CODE_LENGTH = 5
     code = serializers.CharField(max_length=CODE_LENGTH, min_length=CODE_LENGTH)
 

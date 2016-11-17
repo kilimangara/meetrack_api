@@ -225,7 +225,7 @@
 
     **Optional:**
     
-    name: [string]
+    name: [string] Cannot be blank.
     
     hidden_phone: [bool]
     
