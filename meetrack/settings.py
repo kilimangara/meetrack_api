@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'anen3z#=i$41626%9xhso+ina8_s5^$v+jtz1+9v36d!x+c+ij'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -156,6 +156,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'EXCEPTION_HANDLER': 'base_app.response.custom_exception_handler',
     # 'DATETIME_FORMAT': '%s',
     # 'DATETIME_INPUT_FORMATS': ['%S'],
 }

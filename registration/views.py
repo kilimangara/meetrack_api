@@ -5,22 +5,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 
 from authtoken import tokens
+from base_app.error_types import INVALID_PHONE_NUMBER, INVALID_PHONE_CODE, CONFIRM_ATTEMPTS_EXCEEDED
+from base_app.error_types import USER_NOT_FOUND, INVALID_REQUEST_DATA, USER_ALREADY_EXISTS
 from base_app.response import SuccessResponse, ErrorResponse
 from .phone_storage import PhoneStorage
 from .serializers import PhoneSerializer, NewUserSerializer, CodeSerializer, IsNewUserSerializer
 
 User = get_user_model()
-
-INVALID_PHONE_NUMBER = 'INVALID_PHONE_NUMBER'
-INVALID_PHONE_CODE = 'INVALID_PHONE_CODE'
-USER_NOT_FOUND = 'USER_NOT_FOUND'
-CONFIRM_ATTEMPTS_EXCEEDED = 'CONFIRM_ATTEMPTS_EXCEEDED'
-USER_ALREADY_EXISTS = 'USER_ALREADY_EXISTS'
-INVALID_REQUEST_DATA = 'INVALID_REQUEST_DATA'
-
-INVALID_AUTH_TOKEN = 'INVALID_AUTH_TOKEN'
-MEETING_NOT_FOUND = 'MEETING_NOT_FOUND'
-YOU_NOT_KING = 'YOU_NOT_KING'
 
 
 class SMSSendingError(Exception):

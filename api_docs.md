@@ -1,3 +1,28 @@
+**Response json format**
+----
+* **Success:**
+    ```javascript
+    {
+      data: {
+              id: 1,
+              name: "hello",
+              foo: "bar"
+            }
+    }
+    ```
+    
+* **Error:**
+    ```javascript
+    {
+      error: {
+               status_code: 404,
+               type: "USER_NOT_FOUND",
+               description: "Some info."
+             }
+    }
+    ```
+    
+
 **Send code**
 ----
   Sends sms with secret code and checks whether the maximum number of attempts has been exceeded. Code expires after some time, now five minutes. Returns whether the user with this phone number is registered. This method does not create a user. After sending a new code, previous codes become invalid.
@@ -33,23 +58,7 @@
  
 * **Error Response:**
 
-    **Code 400:**
-    
-    **Content:** 
-    ```javascript
-    {
-      phone: ["Invalid phone number."]
-    }
-    ```
-    
-    **Code 429:**
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Too many phone confirmation attempts."
-    }
-    ```
+    "INVALID_PHONE_NUMBER" - if phone number has incorrect format. 
     
     
 **Confirm code, user exists**
@@ -86,35 +95,15 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "INVALID_PHONE_NUMBER" - if phone number has incorrect format. 
     
-    **Content:** 
-    ```javascript
-    {
-      code: ["Code is invalid."],
-      phone: ["Invalid phone number."]
-    }
-    ```
-                  
-    **Code 404:**
+    "INVALID_PHONE_CODE" - if code validation error occurred.
     
-    **Content:** 
-    ```javascript
-    {
-      detail: "User does not exist."
-    }
-    ```
+    "CONFIRM_ATTEMPTS_EXCEEDED" - if the user has exhausted the number of attempts.
     
-    **Code 429:** 
+    "USER_NOT_FOUND" - if user with such phone number does not registered in the system.
     
-    **Content:** 
-    ```javascript
-    {
-      detail: "Too many phone confirmation attempts."
-    }
-    ```
     
-
 **Confirm code, new user**
 ----
   Sign up user by phone and code and checks whether the maximum number of attempts has been exceeded. The user must not be registered in the system. This kind of requests requires additional data. The user is automatically added to the users contact which contain the user's phone number. In debug mode code '00000' always valid.
@@ -156,26 +145,15 @@
  
 * **Error Response:**
 
-    **Code 400:** 
+    "INVALID_PHONE_NUMBER" - if phone number has incorrect format. 
     
-    **Content:** 
-    ```javascript
-    {
-      code: ["Code is invalid."],
-      phone: ["Invalid phone number.", "user with this phone already exists."],
-      name: ["This field is required."],
-      avatar: ["Upload a valid image. The file you uploaded was either not an image or a corrupted image."]
-    }
-    ```
-                  
-    **Code 429:** 
+    "INVALID_PHONE_CODE" - if code validation error occurred.
     
-    **Content:** 
-    ```javascript
-    {
-      detail: "Too many phone confirmation attempts."
-    }
-    ```
+    "CONFIRM_ATTEMPTS_EXCEEDED" - if the user has exhausted the number of attempts.
+    
+    "USER_ALREADY_EXISTS" - if user with such phone number already registered .
+    
+    "INVALID_REQUEST_DATA" - if any request field has incorrect value.
                   
                   
 **Get own account**
