@@ -2,8 +2,8 @@ import random
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.db.transaction import atomic
 from django.db import models
+from django.db.transaction import atomic
 
 from users.models import User
 

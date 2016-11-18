@@ -180,8 +180,8 @@ class PhoneConfirmTests(APITestCase):
         phone.set_code(code='11111')
         u1 = User.objects.create(phone='+79250741414')
         u2 = User.objects.create(phone='+79250741412')
-        u1.add_to_contacts(phone_number, 'hello')
-        u2.add_to_contacts(phone_number, 'world')
+        u1.contacts.create(phone=phone_number, name='hello')
+        u2.contacts.create(phone=phone_number, name='world')
         with open('registration/test_files/file1.png', 'rb') as f:
             r = self.client.post(
                 self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa', 'avatar': f})

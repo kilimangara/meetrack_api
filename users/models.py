@@ -1,3 +1,5 @@
+from collections import Iterable
+
 from bulk_update.helper import bulk_update
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
@@ -6,6 +8,7 @@ from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.db.transaction import atomic
 from django.dispatch import receiver
+from phonenumber_field.modelfields import PhoneNumberField
 
 from authtoken import tokens
 
@@ -14,7 +17,7 @@ FIELD_MAX_LENGTH = 255
 
 class User(models.Model):
     name = models.CharField(max_length=FIELD_MAX_LENGTH)
-    phone = models.CharField(max_length=FIELD_MAX_LENGTH, unique=True)
+    phone = PhoneNumberField(max_length=FIELD_MAX_LENGTH, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     hidden_phone = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
@@ -52,11 +55,11 @@ class User(models.Model):
         self.blocks.filter(user_to_id=user_id).delete()
 
     def add_to_contacts(self, phones, names):
-        if isinstance(phones, str):
+        if isinstance(phones, Iterable) and not isinstance(phones, str):
             # if single contact
-            input_contacts = {phones: names}
-        else:
             input_contacts = dict(zip(phones, names))
+        else:
+            input_contacts = {phones: names}
         old_contacts = self.contacts.filter(phone__in=input_contacts.keys())
         imported_contacts = []
         for contact in old_contacts:

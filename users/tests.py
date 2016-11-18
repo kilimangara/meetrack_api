@@ -247,7 +247,7 @@ class UserRepresentationTests(APITestCase):
     def test_hidden_and_contact(self):
         self.u.hidden_phone = True
         self.u.save()
-        self.viewer.add_to_contacts(self.u.phone, 'world')
+        self.viewer.contacts.create(phone=self.u.phone, user_to=self.u, name='world')
         r = self.client.get(self.url.format(self.u.id))
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
@@ -256,7 +256,7 @@ class UserRepresentationTests(APITestCase):
 
     def test_blocked_and_contact(self):
         self.u.add_to_blacklist(self.viewer.id)
-        self.viewer.add_to_contacts(self.u.phone, 'world')
+        self.viewer.contacts.create(phone=self.u.phone, user_to=self.u, name='world')
         r = self.client.get(self.url.format(self.u.id))
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
