@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
+from base_app.error_types import USER_NOT_FOUND
 
 User = get_user_model()
 
@@ -19,16 +20,18 @@ class BlacklistGetTests(APITestCase):
 
     def test_empty(self):
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, [])
+        self.assertEqual(data, [])
 
     def test_exists(self):
         u1 = User.objects.create(phone='+79250741412')
         self.u.blocks.create(user_to=u1)
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 1)
-        self.assertEqual(r.data[0]['id'], u1.id)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], u1.id)
 
 
 class BlacklistAddTests(APITestCase):
@@ -42,11 +45,6 @@ class BlacklistAddTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         self.u2 = User.objects.create(phone='+79250741412')
 
-    def test_user_does_not_exist(self):
-        r = self.client.put(self.url, data={'user': 228})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('user', r.data)
-
     def test_yourself(self):
         r = self.client.put(self.url, data={'user': self.u.id})
         self.assertEqual(r.status_code, 400)
@@ -54,10 +52,29 @@ class BlacklistAddTests(APITestCase):
 
     def test_new_block(self):
         r = self.client.put(self.url, data={'user': self.u2.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 1)
-        self.assertEqual(r.data[0]['id'], self.u2.id)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.u2.id)
         self.assertIn(self.u2, self.u.blocked_users.all())
+        self.assertEqual(len(self.u.blocked_users.all()), 1)
+
+    def test_block_already_blocked(self):
+        self.u.blocks.create(user_to_id=self.u2.id)
+        r = self.client.put(self.url, data={'user': self.u2.id})
+        data = r.data['data']
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.u2.id)
+        self.assertIn(self.u2, self.u.blocked_users.all())
+        self.assertEqual(len(self.u.blocked_users.all()), 1)
+
+    def test_non_existent_user(self):
+        self.u.blocks.create(user_to_id=self.u2.id)
+        r = self.client.put(self.url, data={'user': self.u2.id + 228})
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
+        self.assertEqual(len(self.u.blocked_users.all()), 1)
 
 
 class BlackListDeleteTests(APITestCase):
@@ -72,11 +89,6 @@ class BlackListDeleteTests(APITestCase):
         self.u2 = User.objects.create(phone='+79250741412')
         self.u3 = User.objects.create(phone='+79250741415')
 
-    def test_user_does_not_exist(self):
-        r = self.client.delete(self.url, data={'user': 228})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('user', r.data)
-
     def test_yourself(self):
         r = self.client.delete(self.url, data={'user': self.u.id})
         self.assertEqual(r.status_code, 400)
@@ -86,11 +98,20 @@ class BlackListDeleteTests(APITestCase):
         self.u.blocks.create(user_to=self.u2)
         self.u.blocks.create(user_to=self.u3)
         r = self.client.delete(self.url, data={'user': self.u2.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 1)
-        self.assertEqual(r.data[0]['id'], self.u3.id)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.u3.id)
         self.assertIn(self.u3, self.u.blocked_users.all())
         self.assertNotIn(self.u2, self.u.blocked_users.all())
+        self.assertEqual(len(self.u.blocked_users.all()), 1)
+
+    def test_non_existent_user(self):
+        self.u.blocks.create(user_to_id=self.u2.id)
+        r = self.client.delete(self.url, data={'user': self.u2.id + 228})
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
+        self.assertEqual(len(self.u.blocked_users.all()), 1)
 
 
 class ContactsGetTests(APITestCase):
@@ -105,16 +126,18 @@ class ContactsGetTests(APITestCase):
 
     def test_empty(self):
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, [])
+        self.assertEqual(data, [])
 
     def test_exists(self):
         u1 = User.objects.create(phone='+79250741412')
         self.u.contacts.create(user_to=u1)
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 1)
-        self.assertEqual(r.data[0]['id'], u1.id)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], u1.id)
 
 
 class ContactsImportTests(APITestCase):
@@ -154,11 +177,12 @@ class ContactsImportTests(APITestCase):
         names = ['hello', 'world', 'booo']
         phones = [self.u2.phone, self.u3.phone, '+79250741415']
         r = self.client.put(self.url, data={'names': names, 'phones': phones})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 2)
+        self.assertEqual(len(data), 2)
         self.assertIn(self.u2, self.u.contacted_users.all())
         self.assertIn(self.u3, self.u.contacted_users.all())
-        for c in r.data:
+        for c in data:
             if c['phone'] == self.u2.phone:
                 c['name'] = 'hello'
             elif c['phone'] == self.u3.phone:
@@ -172,11 +196,12 @@ class ContactsImportTests(APITestCase):
         self.u.contacts.create(user_to=self.u2, phone=self.u2.phone, name='olleh')
         self.u.contacts.create(user_to=self.u3, phone=self.u3.phone, name='dlrow')
         r = self.client.put(self.url, data={'names': names, 'phones': phones})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 2)
+        self.assertEqual(len(data), 2)
         self.assertIn(self.u2, self.u.contacted_users.all())
         self.assertIn(self.u3, self.u.contacted_users.all())
-        for c in r.data:
+        for c in data:
             if c['phone'] == self.u2.phone:
                 c['name'] = 'hello'
             elif c['phone'] == self.u3.phone:
@@ -200,9 +225,10 @@ class ContactsDeleteTests(APITestCase):
         u.contacts.create(user_to=u3, phone=u3.phone)
         phones = ['+79250741413', u3.phone, '+79250741416']
         r = self.client.delete(self.url, {'phones': phones})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 1)
-        self.assertEqual(r.data[0]['id'], u2.id)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], u2.id)
         self.assertIn(u2, u.contacted_users.all())
         self.assertNotIn(u3, u.contacted_users.all())
 
@@ -223,38 +249,48 @@ class UserRepresentationTests(APITestCase):
         self.u.save()
         self.viewer.add_to_contacts(self.u.phone, 'world')
         r = self.client.get(self.url.format(self.u.id))
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['name'], 'world')
-        self.assertEqual(r.data['phone'], '+79250741414')
+        self.assertEqual(data['name'], 'world')
+        self.assertEqual(data['phone'], '+79250741414')
 
     def test_blocked_and_contact(self):
         self.u.add_to_blacklist(self.viewer.id)
         self.viewer.add_to_contacts(self.u.phone, 'world')
         r = self.client.get(self.url.format(self.u.id))
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['name'], 'world')
-        self.assertEqual(r.data['phone'], '+79250741414')
+        self.assertEqual(data['name'], 'world')
+        self.assertEqual(data['phone'], '+79250741414')
 
     def test_blocked(self):
         self.u.add_to_blacklist(self.viewer.id)
         r = self.client.get(self.url.format(self.u.id))
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['name'], 'hello')
-        self.assertNotIn('phone', r.data)
+        self.assertEqual(data['name'], 'hello')
+        self.assertNotIn('phone', data)
 
     def test_hidden(self):
         self.u.hidden_phone = True
         self.u.save()
         r = self.client.get(self.url.format(self.u.id))
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['name'], 'hello')
-        self.assertNotIn('phone', r.data)
+        self.assertEqual(data['name'], 'hello')
+        self.assertNotIn('phone', data)
 
     def test_simple(self):
         r = self.client.get(self.url.format(self.u.id))
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['name'], 'hello')
-        self.assertEqual(r.data['phone'], '+79250741414')
+        self.assertEqual(data['name'], 'hello')
+        self.assertEqual(data['phone'], '+79250741414')
+
+    def test_non_existent_user(self):
+        r = self.client.get(self.url.format(self.u.id + 228))
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
 
 
 class AccountTests(APITestCase):
@@ -282,46 +318,51 @@ class AccountTests(APITestCase):
     def test_get(self):
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 200)
-        self.assertIsNone(r.data['avatar'])
-        self.assertEqual(self.u.name, r.data['name'])
-        self.assertEqual(self.u.id, r.data['id'])
-        self.assertEqual(self.u.phone, r.data['phone'])
-        self.assertEqual(self.u.hidden_phone, r.data['hidden_phone'])
+        data = r.data['data']
+        self.assertIsNone(data['avatar'])
+        self.assertEqual(self.u.name, data['name'])
+        self.assertEqual(self.u.id, data['id'])
+        self.assertEqual(self.u.phone, data['phone'])
+        self.assertEqual(self.u.hidden_phone, data['hidden_phone'])
 
     def test_update_phone(self):
         new_phone = '+79250741413'
         r = self.client.patch(self.url, data={'phone': new_phone})
+        data = r.data['data']
         self.u.refresh_from_db()
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['phone'], self.phone)
+        self.assertEqual(data['phone'], self.phone)
         self.assertNotEqual(self.u.phone, new_phone)
 
     def test_update_name(self):
         new_name = 'world'
         r = self.client.patch(self.url, data={'name': new_name})
+        data = r.data['data']
         self.u.refresh_from_db()
         self.assertEqual(r.status_code, 200)
-        self.assertNotEqual(r.data['name'], self.name)
+        self.assertNotEqual(data['name'], self.name)
         self.assertEqual(self.u.name, new_name)
 
     def test_update_hidden_phone(self):
         self.u.hidden_phone = True
         self.u.save()
         r = self.client.patch(self.url, data={'hidden_phone': False})
+        data = r.data['data']
         self.u.refresh_from_db()
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['hidden_phone'], False)
+        self.assertEqual(data['hidden_phone'], False)
         self.assertEqual(self.u.hidden_phone, False)
 
     def test_update_avatar(self):
         self.assertFalse(self.u.avatar)
         with open('users/test_files/file1.png', 'rb') as f:
             r = self.client.patch(self.url, data={'avatar': f})
+        data = r.data['data']
         self.u.refresh_from_db()
         self.assertEqual(r.status_code, 200)
-        self.assertIsNotNone(r.data['avatar'])
+        self.assertIsNotNone(data['avatar'])
         self.assertTrue(self.u.avatar)
-        self.assertEqual(r.data['avatar'], self.u.avatar.url)
+        self.assertEqual(data['avatar'], self.u.avatar.url)
 
     def test_update_avatar_not_image(self):
         self.assertFalse(self.u.avatar)

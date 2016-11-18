@@ -28,6 +28,4 @@ class ForeignUserIdSerializer(serializers.Serializer):
         viewer = self.context['viewer']
         if viewer.id == value:
             raise serializers.ValidationError("Can not do it with yourself.")
-        elif not User.objects.filter(id=value).exists():
-            raise serializers.ValidationError("User with this id does not exist.")
         return value

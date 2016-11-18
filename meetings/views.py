@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
-from base_app.error_types import MEETING_NOT_FOUND, YOU_NOT_KING, USER_NOT_FOUND, USER_BLOCKED_YOU
+from base_app.error_types import MEETING_NOT_FOUND, YOU_NOT_KING, USER_NOT_FOUND, USER_BLOCKED_YOU, MEETING_NOT_ACTIVE
 from base_app.response import SuccessResponse, ErrorResponse
 from base_app.serializers import ForeignUserIdSerializer
 from msg_queue import queue
@@ -42,15 +42,17 @@ def meetings_list(request):
 @permission_classes([IsAuthenticated])
 def single_meeting(request, pk):
     user = request.user
+    try:
+        meeting = user.meetings.get(id=pk)
+    except Meeting.DoesNotExist:
+        return ErrorResponse(MEETING_NOT_FOUND, status.HTTP_404_NOT_FOUND,
+                             "Your meeting with that id does not exist.")
     if request.method == 'PATCH':
-        try:
-            meeting = user.meetings.get(id=pk, completed=False)
-        except Meeting.DoesNotExist:
-            return ErrorResponse(MEETING_NOT_FOUND, status.HTTP_404_NOT_FOUND,
-                                 "Uncompleted meeting with such id does not exist.")
+        if meeting.completed:
+            return ErrorResponse(MEETING_NOT_ACTIVE, status.HTTP_404_NOT_FOUND, "The meeting has been completed.")
         if user.id != meeting.king_id:
             return ErrorResponse(YOU_NOT_KING, status.HTTP_403_FORBIDDEN,
-                                 "Only the king of meeting can change the meeting information.")
+                                 "Only the king of meeting can update the meeting.")
         update_serializer = MeetingUpdateSerializer(meeting, data=request.data, partial=True)
         update_serializer.is_valid(raise_exception=True)
         update_serializer.save()
@@ -58,10 +60,6 @@ def single_meeting(request, pk):
         serializer = MeetingSerializer(meeting, context={'king_id': user.id})
         return SuccessResponse(serializer.data, status.HTTP_200_OK)
     else:
-        try:
-            meeting = user.meetings.get(id=pk)
-        except Meeting.DoesNotExist:
-            return ErrorResponse(MEETING_NOT_FOUND, status.HTTP_404_NOT_FOUND, "Meeting with such id does not exists.")
         if request.method == 'GET':
             serializer = MeetingSerializer(meeting)
             return SuccessResponse(serializer.data, status.HTTP_200_OK)
@@ -77,10 +75,12 @@ def single_meeting(request, pk):
 def meeting_members(request, pk):
     user = request.user
     try:
-        meeting = user.meetings.get(id=pk, completed=False)
+        meeting = user.meetings.get(id=pk)
     except Meeting.DoesNotExist:
         return ErrorResponse(MEETING_NOT_FOUND, status.HTTP_404_NOT_FOUND,
-                             "Uncompleted meeting with that id does not exist.")
+                             "Your meeting with that id does not exist.")
+    if meeting.completed:
+        return ErrorResponse(MEETING_NOT_ACTIVE, status.HTTP_404_NOT_FOUND, "The meeting has been completed.")
     id_serializer = ForeignUserIdSerializer(data=request.data, context={'viewer': user})
     id_serializer.is_valid(raise_exception=True)
     user_id = id_serializer.validated_data['user']

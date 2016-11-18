@@ -8,7 +8,9 @@ from authtoken import tokens
 from msg_queue.tests import QueueTestConsumer
 from .models import Meeting
 from msg_queue import queue
-from .views import USER_LEFT, USER_EXCLUDED, USER_INVITED, MEETING_COMPLETED
+from .msg_types import USER_LEFT, USER_EXCLUDED, USER_INVITED, MEETING_COMPLETED
+from base_app.error_types import MEETING_NOT_ACTIVE, MEETING_NOT_FOUND
+from base_app.error_types import YOU_NOT_KING, USER_NOT_FOUND, USER_BLOCKED_YOU
 
 User = get_user_model()
 
@@ -53,12 +55,13 @@ class MeetingCreationTests(APITestCase):
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'destination_lat': 1.1,
                                                  'destination_lon': 1.1})
-        mid = r.data['id']
+        data = r.data['data']
+        mid = data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['king'], self.u.id)
-        self.assert_lists_equal(r.data['users'], users)
+        self.assertEqual(data['king'], self.u.id)
+        self.assert_lists_equal(data['users'], users)
 
     def test_completed(self):
         users = [self.u2.id, self.u.id, self.u3.id]
@@ -66,24 +69,26 @@ class MeetingCreationTests(APITestCase):
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'completed': True,
                                                  'destination_lat': 1.1, 'destination_lon': 1.1})
         self.assertEqual(r.status_code, 201)
-        mid = r.data['id']
+        data = r.data['data']
+        mid = data['id']
         m = Meeting.objects.get(id=mid)
         self.assertFalse(m.completed)
-        self.assertEqual(r.data['king'], self.u.id)
-        self.assertFalse(r.data['completed'])
-        self.assert_lists_equal(r.data['users'], users)
+        self.assertEqual(data['king'], self.u.id)
+        self.assertFalse(data['completed'])
+        self.assert_lists_equal(data['users'], users)
 
     def test_users_without_creator(self):
         users = [self.u2.id, self.u3.id]
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'destination_lat': 1.1,
                                                  'destination_lon': 1.1})
-        mid = r.data['id']
+        data = r.data['data']
+        mid = data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['king'], self.u.id)
-        self.assert_lists_equal(r.data['users'], users + [self.u.id])
+        self.assertEqual(data['king'], self.u.id)
+        self.assert_lists_equal(data['users'], users + [self.u.id])
 
     def test_non_existing_users(self):
         registered = [self.u2.id, self.u3.id, self.u.id]
@@ -92,12 +97,13 @@ class MeetingCreationTests(APITestCase):
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'destination_lat': 1.1,
                                                  'destination_lon': 1.1})
-        mid = r.data['id']
+        data = r.data['data']
+        mid = data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['king'], self.u.id)
-        self.assert_lists_equal(r.data['users'], registered)
+        self.assertEqual(data['king'], self.u.id)
+        self.assert_lists_equal(data['users'], registered)
 
     def test_blocked_user(self):
         users = [self.u2.id, self.u3.id]
@@ -105,13 +111,14 @@ class MeetingCreationTests(APITestCase):
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'description': 'hhh',
                                                  'destination_lat': 1.1, 'destination_lon': 1.1})
-        mid = r.data['id']
+        data = r.data['data']
+        mid = data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['king'], self.u.id)
-        self.assert_lists_equal(r.data['users'], [self.u3.id, self.u.id])
-        self.assertNotIn(self.u2.id, r.data['users'])
+        self.assertEqual(data['king'], self.u.id)
+        self.assert_lists_equal(data['users'], [self.u3.id, self.u.id])
+        self.assertNotIn(self.u2.id, data['users'])
         self.assertEqual(m.description, 'hhh')
 
     def test_with_end_at(self):
@@ -120,12 +127,13 @@ class MeetingCreationTests(APITestCase):
         with open('meetings/test_files/file1.png', 'rb') as f:
             r = self.client.post(self.url, data={'logo': f, 'users': users, 'title': 'sdf', 'end_at': end_at,
                                                  'destination_lat': 1.1, 'destination_lon': 1.1})
-        mid = r.data['id']
+        data = r.data['data']
+        mid = data['id']
         m = Meeting.objects.get(id=mid)
         self.assertEqual(m.king_id, self.u.id)
         self.assertEqual(r.status_code, 201)
-        self.assertEqual(r.data['king'], self.u.id)
-        self.assert_lists_equal(r.data['users'], users)
+        self.assertEqual(data['king'], self.u.id)
+        self.assert_lists_equal(data['users'], users)
         self.assertEqual(m.end_at, m.end_at)
 
 
@@ -150,8 +158,9 @@ class GetMeetingsTests(APITestCase):
             m.members.create(user=self.u2, king=True)
             m.members.create(user=self.u3)
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, [])
+        self.assertEqual(data, [])
 
     def test_choice(self):
         m1 = Meeting.objects.create()
@@ -159,10 +168,12 @@ class GetMeetingsTests(APITestCase):
         m2 = Meeting.objects.create(completed=True)
         m2.members.create(user=self.u, king=True)
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assert_ids_equal(r.data, [m1.id])
+        self.assert_ids_equal(data, [m1.id])
         r = self.client.get(self.url, data={'completed': False})
-        self.assert_ids_equal(r.data, [m1.id])
+        data = r.data['data']
+        self.assert_ids_equal(data, [m1.id])
 
     def test_not_king(self):
         m1 = Meeting.objects.create()
@@ -172,8 +183,9 @@ class GetMeetingsTests(APITestCase):
         m2.members.create(user=self.u2, king=True)
         m2.members.create(user=self.u)
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assert_ids_equal(r.data, [m1.id, m2.id])
+        self.assert_ids_equal(data, [m1.id, m2.id])
 
 
 class GetSingleMeetingTests(APITestCase):
@@ -193,14 +205,20 @@ class GetSingleMeetingTests(APITestCase):
         self.m.members.create(user=self.u2, king=True)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, 404)
-        self.assertIn('detail', r.data)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
+
+    def test_non_existent(self):
+        r = self.client.get('/api/meetings/{}/'.format(self.m.id + 228))
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
 
     def test_uncompleted(self):
         self.m.members.create(user=self.u2, king=True)
         self.m.members.create(user=self.u)
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['id'], self.m.id)
+        self.assertEqual(data['id'], self.m.id)
 
     def test_completed(self):
         self.m.members.create(user=self.u2, king=True)
@@ -208,8 +226,9 @@ class GetSingleMeetingTests(APITestCase):
         self.m.completed = True
         self.m.save()
         r = self.client.get(self.url)
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data['id'], self.m.id)
+        self.assertEqual(data['id'], self.m.id)
 
 
 class MeetingInviteTests(APITestCase):
@@ -239,7 +258,7 @@ class MeetingInviteTests(APITestCase):
         self.m.members.create(user=self.u3)
         r = self.client.put(self.url, data={'user': self.u3.id})
         self.assertEqual(r.status_code, 404)
-        self.assertIn('detail', r.data)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
 
     def test_completed(self):
         self.m.members.create(user=self.u, king=True)
@@ -248,25 +267,26 @@ class MeetingInviteTests(APITestCase):
         self.m.save()
         r = self.client.put(self.url, data={'user': self.u2.id})
         self.assertEqual(r.status_code, 404)
-        self.assertIn('detail', r.data)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_ACTIVE)
 
     def test_blocked(self):
         self.m.members.create(user=self.u, king=True)
         self.m.members.create(user=self.u2)
         self.u3.blocks.create(user_to=self.u)
         r = self.client.put(self.url, data={'user': self.u3.id})
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.data['error']['type'], USER_BLOCKED_YOU)
         self.assertNotIn(self.u3, self.m.users.all())
-        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_not_king(self):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         r = self.client.put(self.url, data={'user': self.u3.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.u3, self.m.users.all())
-        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
+        self.assert_lists_equal(data['users'], [self.u.id, self.u2.id, self.u3.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
                          [{'meeting': self.m.id, 'type': USER_INVITED, 'data': {'user': self.u3.id}}])
 
@@ -274,9 +294,10 @@ class MeetingInviteTests(APITestCase):
         self.m.members.create(user=self.u, king=True)
         self.m.members.create(user=self.u2)
         r = self.client.put(self.url, data={'user': self.u3.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.u3, self.m.users.all())
-        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id, self.u3.id])
+        self.assert_lists_equal(data['users'], [self.u.id, self.u2.id, self.u3.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
                          [{'meeting': self.m.id, 'type': USER_INVITED, 'data': {'user': self.u3.id}}])
 
@@ -284,10 +305,11 @@ class MeetingInviteTests(APITestCase):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         r = self.client.put(self.url, data={'user': self.u2.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
         self.assertIn(self.u2, self.m.users.all())
-        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+        self.assert_lists_equal(data['users'], [self.u.id, self.u2.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_yourself(self):
@@ -302,8 +324,8 @@ class MeetingInviteTests(APITestCase):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         r = self.client.put(self.url, data={'user': 228})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('user', r.data)
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
 
 
 class MeetingExcludeTests(APITestCase):
@@ -333,7 +355,7 @@ class MeetingExcludeTests(APITestCase):
         self.m.members.create(user=self.u3)
         r = self.client.delete(self.url, data={'user': self.u3.id})
         self.assertEqual(r.status_code, 404)
-        self.assertIn('detail', r.data)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
 
     def test_completed(self):
         self.m.members.create(user=self.u, king=True)
@@ -342,7 +364,7 @@ class MeetingExcludeTests(APITestCase):
         self.m.save()
         r = self.client.delete(self.url, data={'user': self.u3.id})
         self.assertEqual(r.status_code, 404)
-        self.assertIn('detail', r.data)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_ACTIVE)
 
     def test_not_king(self):
         self.m.members.create(user=self.u)
@@ -350,6 +372,7 @@ class MeetingExcludeTests(APITestCase):
         self.m.members.create(user=self.u3)
         r = self.client.delete(self.url, data={'user': self.u3.id})
         self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.data['error']['type'], YOU_NOT_KING)
         self.assertIn(self.u3, self.m.users.all())
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
@@ -358,9 +381,10 @@ class MeetingExcludeTests(APITestCase):
         self.m.members.create(user=self.u2)
         self.m.members.create(user=self.u3)
         r = self.client.delete(self.url, data={'user': self.u3.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
-        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+        self.assert_lists_equal(data['users'], [self.u.id, self.u2.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
                          [{'meeting': self.m.id, 'type': USER_EXCLUDED, 'data': {'user': self.u3.id}}])
 
@@ -368,9 +392,10 @@ class MeetingExcludeTests(APITestCase):
         self.m.members.create(user=self.u, king=True)
         self.m.members.create(user=self.u2)
         r = self.client.delete(self.url, data={'user': self.u3.id})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertNotIn(self.u3, self.m.users.all())
-        self.assert_lists_equal(r.data['users'], [self.u.id, self.u2.id])
+        self.assert_lists_equal(data['users'], [self.u.id, self.u2.id])
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_yourself(self):
@@ -385,8 +410,9 @@ class MeetingExcludeTests(APITestCase):
         self.m.members.create(user=self.u)
         self.m.members.create(user=self.u2, king=True)
         r = self.client.delete(self.url, data={'user': 228})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('user', r.data)
+        self.assertEqual(r.status_code, 404)
+
+        self.assertEqual(r.data['error']['type'], USER_NOT_FOUND)
 
 
 class MeetingLeaveTests(APITestCase):
@@ -435,6 +461,12 @@ class MeetingLeaveTests(APITestCase):
         self.m.members.create(user=self.u2, king=True)
         r = self.client.delete(self.url)
         self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
+
+    def test_non_existent_meeting(self):
+        r = self.client.delete('/api/meetings/{}/'.format(self.m.id + 228))
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
 
     def test_completed(self):
         self.m.members.create(user=self.u)
@@ -479,12 +511,19 @@ class MeetingCompleteTests(APITestCase):
         self.m.members.create(user=self.u2, king=True)
         r = self.client.patch(self.url, {'completed': True})
         self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.data['error']['type'], YOU_NOT_KING)
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
     def test_not_member(self):
         self.m.members.create(user=self.u2, king=True)
         r = self.client.patch(self.url, {'completed': True})
         self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
+
+    def test_non_existent_meeting(self):
+        r = self.client.patch('/api/meetings/{}/'.format(self.m.id + 228), {'completed': True})
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_FOUND)
 
     def test_not_true(self):
         self.m.members.create(user=self.u, king=True)
@@ -494,14 +533,26 @@ class MeetingCompleteTests(APITestCase):
         self.assertIn('completed', r.data)
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
 
+    def test_completed_meeting(self):
+        self.m.members.create(user=self.u, king=True)
+        self.m.completed = True
+        self.m.save()
+        r = self.client.patch(self.url, {'completed': True})
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.data['error']['type'], MEETING_NOT_ACTIVE)
+        self.m.refresh_from_db()
+        self.assertTrue(self.m.completed)
+        self.assertEqual(self.queue_test_consumer.get_meeting_msgs(), [])
+
     def test_success(self):
         self.m.members.create(user=self.u, king=True)
         self.m.members.create(user=self.u2)
         r = self.client.patch(self.url, {'completed': True})
+        data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.m.refresh_from_db()
-        self.assertEqual(r.data['id'], self.m.id)
-        self.assertTrue(r.data['completed'])
+        self.assertEqual(data['id'], self.m.id)
+        self.assertTrue(data['completed'])
         self.assertTrue(self.m.completed)
         self.assertEqual(self.queue_test_consumer.get_meeting_msgs(),
                          [{'meeting': self.m.id, 'type': MEETING_COMPLETED, 'data': {}}])

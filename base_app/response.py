@@ -1,4 +1,4 @@
-from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated, ValidationError, ParseError
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
@@ -16,7 +16,8 @@ def error_response_content(error_type, status_code, description):
 
 
 def SuccessResponse(data=None, status=None, **kwargs):
-    data = data or {}
+    if data is None:
+        data = {}
     return Response({'data': data}, status, **kwargs)
 
 

@@ -25,7 +25,8 @@ def send(queue, msg):
 
 
 def send_to_meeting(mid, msg_type, data=None):
-    data = data or {}
+    if data is None:
+        data = {}
     send(SOCKET_QUEUE, {
         'meeting': mid,
         'type': msg_type,
