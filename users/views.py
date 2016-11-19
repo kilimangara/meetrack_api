@@ -36,7 +36,7 @@ def users_list(request):
     ids_serializer.is_valid(raise_exception=True)
     user_ids = ids_serializer.validated_data['users']
     users = User.objects.filter(id__in=user_ids).distinct('id')
-    serializer = UserSerializer(users, context={'viewer': request.user}, many=True)
+    serializer = UserSerializer(users, viewer=request.user, many=True)
     return SuccessResponse(serializer.data, status.HTTP_200_OK)
 
 
@@ -47,7 +47,7 @@ def user_details(request, pk):
         user = User.objects.get(pk=pk)
     except User.DoesNotExist:
         return ErrorResponse(USER_NOT_FOUND, status.HTTP_404_NOT_FOUND, "User with such id does not exist.")
-    serializer = UserSerializer(user, context={'viewer': request.user})
+    serializer = UserSerializer(user, viewer=request.user)
     return SuccessResponse(serializer.data, status.HTTP_200_OK)
 
 
@@ -62,10 +62,10 @@ def blacklist(request):
         if not User.objects.filter(id=user_id).exists():
             return ErrorResponse(USER_NOT_FOUND, status.HTTP_404_NOT_FOUND, "User with such id does not exist.")
         if request.method == 'PUT':
-            user.add_to_blacklist(user_id)
+            user.blocks.get_or_create(user_to_id=user_id)
         else:
             user.remove_from_blacklist(user_id)
-    serializer = UserSerializer(user.blocked_users, context={'viewer': user}, many=True)
+    serializer = UserSerializer(user.blocked_users, viewer=user, many=True)
     return SuccessResponse(serializer.data, status.HTTP_200_OK)
 
 
@@ -82,7 +82,7 @@ def contacts(request):
         if request.method == 'DELETE':
             phones_serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
             phones_serializer.is_valid(raise_exception=True)
-            user.remove_from_contacts(phones_serializer.validated_data['phones'])
+            user.contacts.filter(phone__in=phones_serializer.validated_data['phones']).distinct('phone').delete()
         users = user.contacted_users
-    serializer = UserSerializer(users, context={'viewer': user}, many=True)
+    serializer = UserSerializer(users, viewer=request.user, many=True)
     return SuccessResponse(serializer.data, status.HTTP_200_OK)

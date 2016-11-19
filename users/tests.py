@@ -252,23 +252,26 @@ class UserRepresentationTests(APITestCase):
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertEqual(data['name'], 'world')
+        self.assertTrue(data['contacted'])
         self.assertEqual(data['phone'], '+79250741414')
 
     def test_blocked_and_contact(self):
-        self.u.add_to_blacklist(self.viewer.id)
+        self.u.blocks.get_or_create(user_to_id=self.viewer.id)
         self.viewer.contacts.create(phone=self.u.phone, user_to=self.u, name='world')
         r = self.client.get(self.url.format(self.u.id))
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertEqual(data['name'], 'world')
+        self.assertTrue(data['contacted'])
         self.assertEqual(data['phone'], '+79250741414')
 
     def test_blocked(self):
-        self.u.add_to_blacklist(self.viewer.id)
+        self.u.blocks.get_or_create(user_to_id=self.viewer.id)
         r = self.client.get(self.url.format(self.u.id))
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertEqual(data['name'], 'hello')
+        self.assertFalse(data['contacted'])
         self.assertNotIn('phone', data)
 
     def test_hidden(self):
@@ -278,6 +281,7 @@ class UserRepresentationTests(APITestCase):
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertEqual(data['name'], 'hello')
+        self.assertFalse(data['contacted'])
         self.assertNotIn('phone', data)
 
     def test_simple(self):
@@ -285,6 +289,7 @@ class UserRepresentationTests(APITestCase):
         data = r.data['data']
         self.assertEqual(r.status_code, 200)
         self.assertEqual(data['name'], 'hello')
+        self.assertFalse(data['contacted'])
         self.assertEqual(data['phone'], '+79250741414')
 
     def test_non_existent_user(self):
@@ -322,6 +327,7 @@ class AccountTests(APITestCase):
         self.assertIsNone(data['avatar'])
         self.assertEqual(self.u.name, data['name'])
         self.assertEqual(self.u.id, data['id'])
+        self.assertFalse(data['contacted'])
         self.assertEqual(self.u.phone, data['phone'])
         self.assertEqual(self.u.hidden_phone, data['hidden_phone'])
 

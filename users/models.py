@@ -30,7 +30,7 @@ class User(models.Model):
     USERNAME_FIELD = 'phone'
 
     def __str__(self):
-        return str(self.phone) + ' ' + str(self.id)
+        return '{} {}'.format(self.phone, self.id)
 
     @property
     def is_anonymous(self):
@@ -48,9 +48,6 @@ class User(models.Model):
         """
         return True
 
-    def add_to_blacklist(self, user_id):
-        self.blocks.get_or_create(user_to_id=user_id)
-
     def remove_from_blacklist(self, user_id):
         self.blocks.filter(user_to_id=user_id).delete()
 
@@ -61,13 +58,13 @@ class User(models.Model):
             # if single contact
             input_contacts = {phones: names}
         old_contacts = self.contacts.filter(phone__in=input_contacts.keys())
-        imported_contacts = []
+        contacted_user_ids = []
         for contact in old_contacts:
             phone = contact.phone
             contact.name = input_contacts[phone]
             input_contacts.pop(phone)
             if contact.user_to_id is not None:
-                imported_contacts.append(contact.user_to_id)
+                contacted_user_ids.append(contact.user_to_id)
         registered_phones = dict(User.objects.filter(phone__in=input_contacts.keys()).values_list('phone', 'id'))
         to_create = []
         for phone, name in input_contacts.items():
@@ -75,14 +72,11 @@ class User(models.Model):
             c = Contact(user_from=self, user_to_id=user_to_id, phone=phone, name=name)
             to_create.append(c)
             if user_to_id is not None:
-                imported_contacts.append(c.user_to_id)
+                contacted_user_ids.append(c.user_to_id)
         with atomic():
             bulk_update(old_contacts, update_fields=['name'])
             Contact.objects.bulk_create(to_create)
-        return User.objects.filter(id__in=imported_contacts)
-
-    def remove_from_contacts(self, phones):
-        self.contacts.filter(phone__in=phones).distinct('phone').delete()
+        return User.objects.filter(id__in=contacted_user_ids)
 
 
 class BlackList(models.Model):
@@ -118,4 +112,4 @@ class Contact(models.Model):
         unique_together = ['user_from', 'user_to']
 
     def __str__(self):
-        return ' '.join([self.phone, str(self.user_from_id)])
+        return '{} {}'.format(self.phone, self.user_from_id)

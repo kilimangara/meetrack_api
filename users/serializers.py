@@ -11,9 +11,15 @@ User = get_user_model()
 
 
 class AccountSerializer(serializers.ModelSerializer):
+    contacted = serializers.SerializerMethodField()
+
+    @classmethod
+    def get_contacted(cls, obj):
+        return False
+
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'created_at', 'hidden_phone', 'avatar']
+        fields = ['id', 'name', 'phone', 'created_at', 'hidden_phone', 'avatar', 'contacted']
         read_only_fields = ['created_at', 'phone']
 
 
@@ -22,29 +28,32 @@ class UserIdsSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    contacted = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'avatar']
+        fields = ['id', 'name', 'phone', 'avatar', 'contacted']
 
-    def __init__(self, *args, **kwargs):
+    def get_contacted(self, obj):
+        user = obj
+        return user.id in self.contacts
+
+    def __init__(self, *args, viewer, **kwargs):
         super().__init__(*args, **kwargs)
-        viewer = self.context['viewer']
-        contacts = {c.user_to_id: c for c in viewer.contacts.all()}
-        self.context['contacts'] = contacts
-        self.context['blocked_viewer'] = set(viewer.blocked_me.all())
+        self.viewer = viewer
+        self.contacts = {c.user_to_id: c for c in viewer.contacts.all()}
+        self.blocked_viewer = set(viewer.blocked_me.all())
 
     def to_representation(self, instance):
-        viewer = self.context['viewer']
-        contact = self.context['contacts'].get(instance.id)
-        blocked_viewer = self.context['blocked_viewer']
-        if contact:
-            instance.name = contact.name
+        contact = self.contacts.get(instance.id)
+        if contact is not None:
             data = super().to_representation(instance)
-        elif viewer == instance:
+            data['name'] = contact.name
+        elif self.viewer == instance:
             data = AccountSerializer(instance).data
         else:
             data = super().to_representation(instance)
-            if instance.hidden_phone or instance in blocked_viewer:
+            if instance.hidden_phone or instance in self.blocked_viewer:
                 del data['phone']
         return data
 
