@@ -214,23 +214,51 @@ class ContactsDeleteTests(APITestCase):
     url = '/api/contacts/'
     r = fakeredis.FakeStrictRedis()
     tokens.connect(r)
+    users_phones = ['+79250741412', '+79250741414']
+    non_users_phones = ['+79250741415', '+79250741416']
 
-    def test_success(self):
-        u = User.objects.create(phone='+79250741413')
-        token = tokens.create(u.id)
+    def setUp(self):
+        self.u = User.objects.create(phone='+79250741413')
+        token = tokens.create(self.u.id)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
-        u2 = User.objects.create(phone='+79250741414')
-        u3 = User.objects.create(phone='+79250741412')
-        u.contacts.create(user_to=u2, phone=u2.phone)
-        u.contacts.create(user_to=u3, phone=u3.phone)
-        phones = ['+79250741413', u3.phone, '+79250741416']
-        r = self.client.delete(self.url, {'phones': phones})
-        data = r.data['data']
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['id'], u2.id)
-        self.assertIn(u2, u.contacted_users.all())
-        self.assertNotIn(u3, u.contacted_users.all())
+        self.u2 = User.objects.create(phone=self.users_phones[0])
+        self.u3 = User.objects.create(phone=self.users_phones[1])
+        self.u.contacts.create(user_to=self.u2, phone=self.u2.phone)
+        self.u.contacts.create(user_to=self.u3, phone=self.u3.phone)
+        self.u.contacts.create(phone=self.non_users_phones[0])
+        self.u.contacts.create(phone=self.non_users_phones[1])
+        self.u2.contacts.create(user_to=self.u, phone=self.u.phone)
+        self.u2.contacts.create(user_to=self.u3, phone=self.u3.phone)
+        self.u2.contacts.create(phone=self.non_users_phones[0])
+        self.u2.contacts.create(phone=self.non_users_phones[1])
+
+    def test_without_phones_and_users(self):
+        r = self.client.delete(self.url, {})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('non_field_errors', r.data)
+
+    def test_only_phones(self):
+        r = self.client.delete(self.url, {'phones': self.users_phones + self.non_users_phones})
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(len(self.u.contacts.all()), 2)
+        self.assertIn(self.u.contacts.all()[0].phone, self.users_phones)
+        self.assertIn(self.u.contacts.all()[1].phone, self.users_phones)
+        self.assertEqual(len(self.u2.contacts.all()), 4)
+
+    def test_only_users(self):
+        r = self.client.delete(self.url, {'users': [self.u2.id, self.u3.id]})
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(len(self.u.contacts.all()), 2)
+        self.assertIn(self.u.contacts.all()[0].phone, self.non_users_phones)
+        self.assertIn(self.u.contacts.all()[1].phone, self.non_users_phones)
+        self.assertEqual(len(self.u2.contacts.all()), 4)
+
+    def test_users_and_phones(self):
+        r = self.client.delete(self.url,
+                               {'users': [self.u2.id, self.u3.id], 'phones': self.users_phones + self.non_users_phones})
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(len(self.u.contacts.all()), 0)
+        self.assertEqual(len(self.u2.contacts.all()), 4)
 
 
 class UserRepresentationTests(APITestCase):

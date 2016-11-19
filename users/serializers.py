@@ -59,9 +59,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ImportContactsSerializer(serializers.Serializer):
-    phones = serializers.ListField(child=PhoneNumberField(), allow_empty=False, write_only=True)
-    names = serializers.ListField(child=serializers.CharField(max_length=FIELD_MAX_LENGTH), allow_empty=False,
-                                  write_only=True)
+    phones = serializers.ListField(child=PhoneNumberField(), allow_empty=False)
+    names = serializers.ListField(child=serializers.CharField(max_length=FIELD_MAX_LENGTH), allow_empty=False)
 
     def validate_phones(self, value):
         phones = value
@@ -82,4 +81,12 @@ class ImportContactsSerializer(serializers.Serializer):
 
 
 class DeleteContactsSerializer(serializers.Serializer):
-    phones = serializers.ListField(child=PhoneNumberField(), allow_empty=False, write_only=True)
+    phones = serializers.ListField(child=PhoneNumberField(), required=False)
+    users = serializers.ListField(child=serializers.IntegerField(), required=False)
+
+    def validate(self, attrs):
+        users = attrs.get('users')
+        phones = attrs.get('phones')
+        if not users and not phones:
+            raise serializers.ValidationError("Either phones or users must be supplied.")
+        return attrs

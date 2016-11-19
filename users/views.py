@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 
 from base_app.error_types import USER_NOT_FOUND
@@ -74,15 +75,27 @@ def blacklist(request):
 def contacts(request):
     user = request.user
     if request.method == 'PUT':
-        contacts_serializer = ImportContactsSerializer(data=request.data, context={'user': user})
-        contacts_serializer.is_valid(raise_exception=True)
-        users = user.add_to_contacts(contacts_serializer.validated_data['phones'],
-                                     contacts_serializer.validated_data['names'])
-    else:
-        if request.method == 'DELETE':
-            phones_serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
-            phones_serializer.is_valid(raise_exception=True)
-            user.contacts.filter(phone__in=phones_serializer.validated_data['phones']).distinct('phone').delete()
-        users = user.contacted_users
-    serializer = UserSerializer(users, viewer=request.user, many=True)
-    return SuccessResponse(serializer.data, status.HTTP_200_OK)
+        import_serializer = ImportContactsSerializer(data=request.data, context={'user': user})
+        import_serializer.is_valid(raise_exception=True)
+        contacted_users = user.add_to_contacts(import_serializer.validated_data['phones'],
+                                               import_serializer.validated_data['names'])
+        serializer = UserSerializer(contacted_users, viewer=request.user, many=True)
+        return SuccessResponse(serializer.data, status.HTTP_200_OK)
+    elif request.method == 'GET':
+        serializer = UserSerializer(user.contacted_users, viewer=request.user, many=True)
+        return SuccessResponse(serializer.data, status.HTTP_200_OK)
+    elif request.method == 'DELETE':
+        delete_serializer = DeleteContactsSerializer(data=request.data, context={'user': user})
+        delete_serializer.is_valid(raise_exception=True)
+        phones = delete_serializer.validated_data.get('phones')
+        user_ids = delete_serializer.validated_data.get('users')
+        result_filter = None
+        if user_ids:
+            user_ids_filter = Q(user_to_id__in=user_ids)
+            result_filter = user_ids_filter
+        if phones:
+            phones_filter = Q(phone__in=phones, user_to__isnull=True)
+            result_filter = result_filter | phones_filter if result_filter is not None else phones_filter
+        if result_filter is not None:
+            user.contacts.filter(result_filter).distinct('id').delete()
+        return SuccessResponse(status=status.HTTP_204_NO_CONTENT)
