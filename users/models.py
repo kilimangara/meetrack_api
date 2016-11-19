@@ -17,7 +17,7 @@ FIELD_MAX_LENGTH = 255
 
 class User(models.Model):
     name = models.CharField(max_length=FIELD_MAX_LENGTH)
-    phone = PhoneNumberField(max_length=FIELD_MAX_LENGTH, unique=True)
+    phone = PhoneNumberField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     hidden_phone = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to='images/%Y/%m/%d', storage=FileSystemStorage(base_url=settings.STORAGE_URL))
@@ -30,7 +30,7 @@ class User(models.Model):
     USERNAME_FIELD = 'phone'
 
     def __str__(self):
-        return self.phone + ' ' + str(self.id)
+        return str(self.phone) + ' ' + str(self.id)
 
     @property
     def is_anonymous(self):
@@ -56,9 +56,9 @@ class User(models.Model):
 
     def add_to_contacts(self, phones, names):
         if isinstance(phones, Iterable) and not isinstance(phones, str):
-            # if single contact
             input_contacts = dict(zip(phones, names))
         else:
+            # if single contact
             input_contacts = {phones: names}
         old_contacts = self.contacts.filter(phone__in=input_contacts.keys())
         imported_contacts = []
@@ -111,7 +111,7 @@ def delete_user(instance, **kwargs):
 class Contact(models.Model):
     user_from = models.ForeignKey('User', models.CASCADE, related_name='contacts')
     user_to = models.ForeignKey('User', models.SET_NULL, related_name='inbound_contacts', null=True)
-    phone = models.CharField(max_length=FIELD_MAX_LENGTH)
+    phone = PhoneNumberField()
     name = models.CharField(max_length=FIELD_MAX_LENGTH, null=True)
 
     class Meta:

@@ -2,9 +2,8 @@ import random
 import string
 
 from django.contrib.auth import get_user_model
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
-
-from base_app.serializers import PhoneNumberField
 
 User = get_user_model()
 

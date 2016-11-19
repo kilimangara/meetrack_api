@@ -1,10 +1,10 @@
 requests
-django
 Pillow
-psycopg2
+django
 djangorestframework
-phonenumbers
+psycopg2
 redis
 https://github.com/gazoon/fakeredis/archive/master.zip
+phonenumbers
+https://github.com/gazoon/django-phonenumber-field/archive/develop.zip
 django-bulk-update
-pika

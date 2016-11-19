@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'base_app',
     'authtoken',
     'registration',
+    'phonenumber_field',
     'meetings',
     'users',
     'msg_queue',
