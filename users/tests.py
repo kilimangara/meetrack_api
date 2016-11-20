@@ -234,8 +234,9 @@ class ContactsDeleteTests(APITestCase):
 
     def test_without_phones_and_users(self):
         r = self.client.delete(self.url, {})
-        self.assertEqual(r.status_code, 400)
-        self.assertIn('non_field_errors', r.data)
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(len(self.u.contacts.all()), 4)
+        self.assertEqual(len(self.u2.contacts.all()), 4)
 
     def test_only_phones(self):
         r = self.client.delete(self.url, {'phones': self.users_phones + self.non_users_phones})

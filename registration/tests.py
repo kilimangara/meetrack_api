@@ -121,7 +121,7 @@ class PhoneConfirmTests(APITestCase):
         self.assertEqual(tokens.authenticate(data['token']), u.id)
         with self.assertRaises(tokens.AuthenticationFailed):
             tokens.authenticate(old_token)
-        self.assertEqual(data['user_id'], u.id)
+        self.assertEqual(data['user'], u.id)
         with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()
 
@@ -134,7 +134,7 @@ class PhoneConfirmTests(APITestCase):
         data = r.data['data']
         self.assertEqual(r.status_code, 201)
         self.assertEqual(tokens.authenticate(data['token']), u.id)
-        self.assertEqual(data['user_id'], u.id)
+        self.assertEqual(data['user'], u.id)
         with self.assertRaises(PhoneStorage.DoesNotExist):
             phone.get_code()
 
@@ -187,7 +187,7 @@ class PhoneConfirmTests(APITestCase):
                 self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa', 'avatar': f})
         self.assertEqual(r.status_code, 201)
         data = r.data['data']
-        user_id = data['user_id']
+        user_id = data['user']
         self.assertEqual(tokens.authenticate(data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)
@@ -203,7 +203,7 @@ class PhoneConfirmTests(APITestCase):
         data = r.data['data']
         self.assertEqual(r.status_code, 201)
         self.assertEqual(tokens.authenticate(data['token']), u.id)
-        self.assertEqual(data['user_id'], u.id)
+        self.assertEqual(data['user'], u.id)
         with open('registration/test_files/file1.png', 'rb') as f:
             r = self.client.post(
                 self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa', 'avatar': f})
@@ -221,7 +221,7 @@ class PhoneConfirmTests(APITestCase):
             self.url, {'phone': phone_number, 'code': '11111', 'is_new': True, 'name': 'aa'})
         self.assertEqual(r.status_code, 201)
         data = r.data['data']
-        user_id = data['user_id']
+        user_id = data['user']
         self.assertEqual(tokens.authenticate(data['token']), user_id)
         u = User.objects.get(phone=phone_number)
         self.assertEqual(u.id, user_id)

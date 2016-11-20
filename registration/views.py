@@ -90,4 +90,4 @@ def login(request):
         user_id = user_serializer.save().id
     token = tokens.create(user_id)
     phone_storage.delete_code()
-    return SuccessResponse({'token': token, 'user_id': user_id}, status.HTTP_201_CREATED)
+    return SuccessResponse({'token': token, 'user': user_id}, status.HTTP_201_CREATED)

@@ -46,10 +46,6 @@
  
      
 * **Success Response:**
-
-    **Code 201:**
-    
-    **Content:** 
     ```javascript
     {
       is_new: true
@@ -82,21 +78,15 @@
     
      
 * **Success Response:**
-
-    **Code 201:**
-    
-    **Content:** 
     ```javascript
     {
-      user_id: 1, 
+      user: 1, 
       token: "sadfsdfw22342342dfgaa" 
     }
     ```
  
 * **Error Response:**
 
-    "INVALID_PHONE_NUMBER" - if phone number has incorrect format. 
-    
     "INVALID_PHONE_CODE" - if code validation error occurred.
     
     "CONFIRM_ATTEMPTS_EXCEEDED" - if the user has exhausted the number of attempts.
@@ -132,29 +122,30 @@
     avatar: [file]
      
 * **Success Response:**
-
-    **Code 201:**
-    
-    **Content:** 
     ```javascript
     { 
-      user_id: 1, 
+      user: 1, 
       token: "sadfsdfw22342342dfgaa"
     }
     ```
  
 * **Error Response:**
 
-    "INVALID_PHONE_NUMBER" - if phone number has incorrect format. 
-    
     "INVALID_PHONE_CODE" - if code validation error occurred.
     
     "CONFIRM_ATTEMPTS_EXCEEDED" - if the user has exhausted the number of attempts.
     
     "USER_ALREADY_EXISTS" - if user with such phone number already registered .
     
-    "INVALID_REQUEST_DATA" - if any request field has incorrect value.
-                  
+    **Request data errors:** 
+    ```javascript
+    {
+      phone: ["Invalid phone number."],
+      name: ["This field is required.", "This field may not be blank."],
+      avatar: ["Upload a valid image. The file you uploaded was either not an image or a corrupted image."]
+    }
+    ```
+    
                   
 **Get own account**
 ----
@@ -177,16 +168,13 @@
     None
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     {
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
       created_at: "2016-10-22T18:22:45.121940Z",
+      contacted: false,
       hidden_phone: false, 
       avatar: "http://localhost:8000/path.png"
     }
@@ -194,14 +182,7 @@
  
 * **Error Response:**
 
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Update own account**
@@ -232,16 +213,13 @@
     avatar: [file]
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     {
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
       created_at: "2016-10-22T18:22:45.121940Z",
+      contacted: false,
       hidden_phone: false, 
       avatar: "http://localhost:8000/path.png"
     }
@@ -249,24 +227,17 @@
  
 * **Error Response:**
 
-    **Code 400:** 
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
-    **Content:** 
+    **Request data errors:** 
     ```javascript
     {
       avatar: ["Upload a valid image. The file you uploaded was either not an image or a corrupted image."], 
-      name: ["This field may not be blank"]
+      name: ["This field may not be blank."],
+      hidden_phone: ["\"non-bool value\" is not a valid boolean."]
     }
     ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
+
     
     
 **Delete own account**
@@ -290,21 +261,13 @@
     None
          
 * **Success Response:**
-
-    **Code 204:**
-    
-    **Content:** `` 
+    ```javascript
+    {}
+    ```
     
 * **Error Response:**
 
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Get users**
@@ -329,21 +292,19 @@
   None
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
             id: 1, 
             name: "fff", 
             phone: "+79250741413",
+            contacted: true,
             avatar: "http://localhost:8000/path1.png"
         },
         {
             id: 2, 
             name: "aaa", 
+            contacted: false,
             avatar: "http://localhost:8000/path2.png"
         }
     ]
@@ -351,21 +312,12 @@
  
 * **Error Response:**
 
-    **Code 400:** 
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
-    **Content:** 
+    **Request data errors:** 
     ```javascript
     {
       users: ["This list may not be empty", "A valid integer is required."]
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
     }
     ```
     
@@ -400,29 +352,14 @@
       id: 1, 
       name: "fff", 
       phone: "+79250741413",
+      contacted: true,
       avatar: "http://localhost:8000/path1.png"
     }
     ```
  
 * **Error Response:**
 
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
-    
-    **Code 404:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "User does not exist."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Get blacklist**
@@ -446,21 +383,19 @@
   None
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
             id: 1, 
             name: "fff", 
             phone: "+79250741413",
+            contacted: false,
             avatar: "http://localhost:8000/path1.png"
         },
         {
             id: 2, 
             name: "aaa", 
+            contacted: false,
             avatar: "http://localhost:8000/path2.png"
         }
     ]
@@ -468,14 +403,7 @@
  
 * **Error Response:**
 
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Add to blacklist**
@@ -500,21 +428,19 @@
     user: [integer]
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
             id: 1, 
             name: "fff", 
             phone: "+79250741413",
+            contacted: false,
             avatar: "http://localhost:8000/path1.png"
         },
         {
             id: 2, 
             name: "aaa", 
+            contacted: false,
             avatar: "http://localhost:8000/path2.png"
         }
     ]
@@ -523,21 +449,14 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "USER_NOT_FOUND" - if user with such phone number does not registered in the system.
     
-    **Content:** 
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
+    
+    **Request data errors:** 
     ```javascript
     {
-      user: ["User with this id does not exist.", "Can not do it with yourself."]
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:**
-    ```javascript
-    {
-      detail: "Invalid token."
+      user: ["Can not do it with yourself.","A valid integer is required."]
     }
     ```
     
@@ -564,21 +483,19 @@
     user: [integer]
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
             id: 1, 
             name: "fff", 
             phone: "+79250741413",
+            contacted: false,
             avatar: "http://localhost:8000/path1.png"
         },
         {
             id: 2, 
             name: "aaa", 
+            contacted: false,
             avatar: "http://localhost:8000/path2.png"
         }
     ]
@@ -586,21 +503,14 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "USER_NOT_FOUND" - if user with such phone number does not registered in the system.
     
-    **Content:** 
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
+    
+    **Request data errors:** 
     ```javascript
     {
-      user: ["User with this id does not exist.", "Can not do it with yourself."]
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:**
-    ```javascript
-    {
-      detail: "Invalid token."
+      user: ["Can not do it with yourself.","A valid integer is required."]
     }
     ```
     
@@ -626,22 +536,20 @@
     None
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
             id: 1, 
             name: "fff", 
             phone: "+79250741413",
+            contacted: true,
             avatar: "http://localhost:8000/path1.png"
         },
         {
             id: 2, 
             name: "aaa", 
             phone: "+79250741412",
+            contacted: true,
             avatar: "http://localhost:8000/path2.png"
         }
     ]
@@ -649,14 +557,7 @@
  
 * **Error Response:**
 
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Add to contacts**
@@ -685,22 +586,20 @@
     The first name and the first phone from the lists form a first contact and so on.
      
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
             id: 1, 
             name: "fff", 
             phone: "+79250741413",
+            contacted: true,
             avatar: "http://localhost:8000/path1.png"
         },
         {
             id: 2, 
             name: "aaa", 
             phone: "+79250741412",
+            contacted: true,
             avatar: "http://localhost:8000/path2.png"
         }
     ]
@@ -708,29 +607,20 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
-    **Content:** 
+    **Request data errors:** 
     ```javascript
     {
       phones: ["Phone list contains duplicates.", "The phones list contains user phone."],
       non_field_errors: ["The number of phones must be equal to the number of names."]
     }
     ```
-                   
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
     
     
 **Remove from contacts**
 ----
-  Delete user contacts by phone numbers. Returns resulting contact list.
+  Delete user contacts by phone numbers or user ids. There are two types of contacts: contact with registered user or simple contact without relation with any user(if user with that phone number does not registered in the system yet). This method deletes contacts of the first type by "users" param and contacts of the second type by "phones" param.
 
 * **URL**
   /api/contacts/
@@ -747,7 +637,11 @@
     
 * **Data Params:**
 
+    **Optional:**
+    
     phones: [array]
+    
+    users: [array]
      
 * **Success Response:**
 
@@ -773,21 +667,12 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
-    **Content:** 
+    **Request data errors:** 
     ```javascript
     {
       phones: ["Invalid phone number.", "This list may not be empty."]
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
     }
     ```
     
@@ -831,10 +716,6 @@
     
     
 * **Success Response:**
-
-    **Code 201:**
-    
-    **Content:** 
     ```javascript
     {
         id: 1, 
@@ -858,9 +739,9 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
-    **Content:** 
+    **Request data errors:** 
     ```javascript
     {
       users: ["A valid integer is required."],
@@ -868,15 +749,6 @@
       description: ["This field may not be blank."],
       logo: ["No file was submitted.", "Upload a valid image. The file you uploaded was either not an image or a corrupted image."],
       end_at: [ "Datetime has wrong format. Use one of these formats instead: YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z]."]
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
     }
     ```
     
@@ -907,10 +779,6 @@
     None
     
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     [
         {
@@ -954,14 +822,7 @@
  
 * **Error Response:**
     
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Get meeting**
@@ -985,10 +846,6 @@
     None
     
 * **Success Response:**
-
-    **Code 204:**
-    
-    **Content:** 
     ```javascript
     {
         id: 228, 
@@ -1012,23 +869,9 @@
  
 * **Error Response:**
     
-    **Code 401:** 
+    "MEETING_NOT_FOUND" - if meeting with that id does not exist.
     
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
-    
-    **Code 404:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Meeting does not exist."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Meeting invite user**
@@ -1053,10 +896,6 @@
     user: [integer]
     
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     {
         id: 1, 
@@ -1079,31 +918,19 @@
     ```
  
 * **Error Response:**
-
-    **Code 400:**
     
-    **Content:** 
+    "MEETING_NOT_FOUND" - if meeting with that id does not exist.
+    
+    "MEETING_NOT_ACTIVE" - if meeting has completed status.
+    
+    "USER_BLOCKED_YOU" - if invited user added you to the blacklist.
+    
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
+    
+    **Request data errors:** 
     ```javascript
     {
-      user: ["A valid integer is required.", "User with this id does not exist.", "Can not do it with yourself."],
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
-    
-    **Code 404:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Meeting does not exist."
+      user: ["A valid integer is required.", "Can not do it with yourself."],
     }
     ```
     
@@ -1130,10 +957,6 @@
     user: [integer]
     
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     {
         id: 1, 
@@ -1158,39 +981,18 @@
  
 * **Error Response:**
 
-    **Code 400:**
+    "MEETING_NOT_FOUND" - if meeting with that id does not exist.
     
-    **Content:** 
+    "MEETING_NOT_ACTIVE" - if meeting has completed status.
+    
+    "YOU_NOT_KING" - if the user is not a king of meeting.
+    
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
+    
+    **Request data errors:** 
     ```javascript
     {
-      user: ["A valid integer is required.", "User with this id does not exist.", "Can not do it with yourself."],
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
-    
-    **Code 403:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Only king of meeting have permission to perform this action."
-    }
-    ```
-    
-    **Code 404:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Meeting does not exist."
+      user: ["A valid integer is required.", "Can not do it with yourself."],
     }
     ```
     
@@ -1216,33 +1018,15 @@
     None
     
 * **Success Response:**
-
-    **Code 204:**
-    
-    **Content:** 
     ```javascript
     {}
     ```
  
 * **Error Response:**
     
-    **Code 401:** 
+    "MEETING_NOT_FOUND" - if meeting with that id does not exist.
     
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
-    
-    **Code 404:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Meeting does not exist."
-    }
-    ```
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
     
     
 **Meeting update**
@@ -1269,10 +1053,6 @@
     If "completed" param is specified, it must be true.
     
 * **Success Response:**
-
-    **Code 200:**
-    
-    **Content:** 
     ```javascript
     {
         id: 1, 
@@ -1296,39 +1076,18 @@
     ```
  
 * **Error Response:**
-
-    **Code 400:** 
     
-    **Content:** 
+    "MEETING_NOT_FOUND" - if meeting with that id does not exist.
+    
+    "MEETING_NOT_ACTIVE" - if meeting has completed status.
+    
+    "YOU_NOT_KING" - if the user is not a king of meeting.
+    
+    "INVALID_AUTH_TOKEN" - if token does not specified or does not exist.
+    
+    **Request data errors:** 
     ```javascript
     {
       completed: ["completed must be True or not specified."]
-    }
-    ```
-    
-    **Code 401:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Invalid token."
-    }
-    ```
-    
-    **Code 403:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Only king of meeting have permission to perform this action."
-    }
-    ```
-    
-    **Code 404:** 
-    
-    **Content:** 
-    ```javascript
-    {
-      detail: "Meeting does not exist."
     }
     ```
