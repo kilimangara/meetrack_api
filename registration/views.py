@@ -18,9 +18,9 @@ class SMSSendingError(Exception):
     pass
 
 
-def send_sms_code(phone, code):
+def send_sms_code(phone_number, code):
     r = requests.post(settings.SMS_AUTH['REQUEST_URL'],
-                      data={'To': phone, 'From': settings.SMS_AUTH['FROM_NUMBER'], 'Body': code},
+                      data={'To': str(phone_number), 'From': settings.SMS_AUTH['FROM_NUMBER'], 'Body': code},
                       auth=(settings.SMS_AUTH['ACCOUNT_SID'], settings.SMS_AUTH['AUTH_TOKEN']))
     if r.status_code != 201:
         raise SMSSendingError("Service response has incorrect status code", r)

@@ -15,6 +15,27 @@ from .phone_storage import PhoneStorage
 User = get_user_model()
 
 
+class RealCodeSendingTests(APITestCase):
+    url = '/api/auth/code/'
+    r = fakeredis.FakeStrictRedis()
+    phone_storage.connect(r)
+
+    def test_user_exists(self):
+        phone = '+79250741413'
+        User.objects.create(phone=phone)
+        r = self.client.post(self.url, {'phone': phone})
+        self.assertEqual(r.status_code, 201)
+        data = r.data['data']
+        self.assertEqual(data['is_new'], False)
+
+    def test_new_user(self):
+        phone = '+79250741413'
+        r = self.client.post(self.url, {'phone': phone})
+        self.assertEqual(r.status_code, 201)
+        data = r.data['data']
+        self.assertEqual(data['is_new'], True)
+
+
 @override_settings(TEST_SMS=True)
 class CodeSendingTests(APITestCase):
     url = '/api/auth/code/'
