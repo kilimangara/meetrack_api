@@ -1,12 +1,9 @@
 import fakeredis
-from django.test import TestCase
-from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
 from base_app.error_types import USER_NOT_FOUND
-
-User = get_user_model()
+from users.models import User
 
 
 class BlacklistGetTests(APITestCase):

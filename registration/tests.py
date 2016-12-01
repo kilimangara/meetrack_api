@@ -2,17 +2,15 @@ import time
 
 import fakeredis
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
-from . import phone_storage
 from base_app.error_types import INVALID_PHONE_CODE, INVALID_PHONE_NUMBER, CONFIRM_ATTEMPTS_EXCEEDED
 from base_app.error_types import USER_NOT_FOUND, USER_ALREADY_EXISTS
+from users.models import User
+from . import phone_storage
 from .phone_storage import PhoneStorage
-
-User = get_user_model()
 
 
 class RealCodeSendingTests(APITestCase):

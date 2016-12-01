@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        migrations.swappable_dependency('users.User'),
     ]
 
     operations = [
@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField()),
                 ('logo', models.ImageField(storage=django.core.files.storage.FileSystemStorage(base_url='http://localhost:8000/media/'), upload_to='images/%Y/%m/%d')),
                 ('time', models.DateTimeField()),
-                ('king', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='kingdoms', to=settings.AUTH_USER_MODEL)),
+                ('king', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='kingdoms', to='users.User')),
             ],
         ),
         migrations.CreateModel(
@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('active', models.BooleanField(default=True)),
                 ('meeting', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='members', to='meetings.Meeting')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='memberships', to='users.User')),
             ],
         ),
         migrations.AlterUniqueTogether(

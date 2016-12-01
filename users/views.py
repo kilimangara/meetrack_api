@@ -1,16 +1,14 @@
-from django.contrib.auth import get_user_model
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 
 from base_app.error_types import USER_NOT_FOUND
 from base_app.response import SuccessResponse, ErrorResponse
 from base_app.serializers import ForeignUserIdSerializer
+from users.models import User
 from .serializers import AccountSerializer, UserSerializer
 from .serializers import ImportContactsSerializer, DeleteContactsSerializer, UserIdsSerializer
-
-User = get_user_model()
 
 
 @api_view(['PATCH', 'GET', 'DELETE'])

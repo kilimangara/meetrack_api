@@ -1,6 +1,5 @@
 import requests
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view
 
@@ -8,10 +7,9 @@ from authtoken import tokens
 from base_app.error_types import INVALID_PHONE_NUMBER, INVALID_PHONE_CODE, CONFIRM_ATTEMPTS_EXCEEDED
 from base_app.error_types import USER_NOT_FOUND, USER_ALREADY_EXISTS
 from base_app.response import SuccessResponse, ErrorResponse
+from users.models import User
 from .phone_storage import PhoneStorage
 from .serializers import PhoneSerializer, NewUserSerializer, CodeSerializer, IsNewUserSerializer
-
-User = get_user_model()
 
 
 class SMSSendingError(Exception):

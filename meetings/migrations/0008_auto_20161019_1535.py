@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        migrations.swappable_dependency('users.User'),
         ('meetings', '0007_auto_20161018_2032'),
     ]
 
@@ -21,6 +21,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='meeting',
             name='users',
-            field=models.ManyToManyField(related_name='meetings', through='meetings.Member', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(related_name='meetings', through='meetings.Member', to='users.User'),
         ),
     ]

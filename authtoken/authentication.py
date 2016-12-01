@@ -1,17 +1,16 @@
-from django.contrib.auth import get_user_model
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+from users.models import User
 from . import tokens
 
 
 class RedisTokenAuthentication(TokenAuthentication):
-    User = get_user_model()
-
-    def authenticate_credentials(self, key):
+    @classmethod
+    def authenticate_credentials(cls, key):
         try:
             user_id = tokens.authenticate(key)
-            user = self.User.objects.get(pk=user_id)
-        except (tokens.AuthenticationFailed, self.User.DoesNotExist):
+            user = User.objects.get(pk=user_id)
+        except (tokens.AuthenticationFailed, User.DoesNotExist):
             raise AuthenticationFailed()
         return user, key

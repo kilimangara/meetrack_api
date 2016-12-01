@@ -1,18 +1,15 @@
-from django.utils import timezone
-
 import fakeredis
-from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from authtoken import tokens
-from msg_queue.tests import QueueTestConsumer
-from .models import Meeting
-from msg_queue import queue
-from .msg_types import USER_LEFT, USER_EXCLUDED, USER_INVITED, MEETING_COMPLETED
 from base_app.error_types import MEETING_NOT_ACTIVE, MEETING_NOT_FOUND
 from base_app.error_types import YOU_NOT_KING, USER_NOT_FOUND, USER_BLOCKED_YOU
-
-User = get_user_model()
+from msg_queue import queue
+from msg_queue.tests import QueueTestConsumer
+from users.models import User
+from .models import Meeting
+from .msg_types import USER_LEFT, USER_EXCLUDED, USER_INVITED, MEETING_COMPLETED
 
 
 class MeetingCreationTests(APITestCase):

@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -7,12 +6,11 @@ from base_app.error_types import MEETING_NOT_FOUND, YOU_NOT_KING, USER_NOT_FOUND
 from base_app.response import SuccessResponse, ErrorResponse
 from base_app.serializers import ForeignUserIdSerializer
 from msg_queue import queue
+from users.models import User
 from .models import Meeting
 from .msg_types import USER_EXCLUDED, USER_INVITED, USER_LEFT, MEETING_COMPLETED
 from .serializers import MeetingSerializer, MembersSerializer
 from .serializers import MeetingsListTypeSerializer, MeetingUpdateSerializer
-
-User = get_user_model()
 
 
 @api_view(['POST', 'GET'])

@@ -1,11 +1,10 @@
 import random
 import string
 
-from django.contrib.auth import get_user_model
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
-User = get_user_model()
+from users.models import User
 
 
 class ErrorToTextMixin(object):

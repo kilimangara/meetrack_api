@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('active', models.BooleanField(default=True)),
-                ('user_from', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blocks', to=settings.AUTH_USER_MODEL)),
-                ('user_to', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inbound_blocks', to=settings.AUTH_USER_MODEL)),
+                ('user_from', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blocks', to='users.User')),
+                ('user_to', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='inbound_blocks', to='users.User')),
             ],
         ),
         migrations.AlterUniqueTogether(

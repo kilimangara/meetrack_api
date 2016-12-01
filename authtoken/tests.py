@@ -1,11 +1,9 @@
 import fakeredis
-from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+
 from base_app.error_types import INVALID_AUTH_TOKEN
-
+from users.models import User
 from . import tokens
-
-User = get_user_model()
 
 
 class AuthTests(APITestCase):

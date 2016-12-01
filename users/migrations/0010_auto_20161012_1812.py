@@ -21,8 +21,8 @@ class Migration(migrations.Migration):
                 ('phone', models.CharField(max_length=255)),
                 ('name', models.CharField(max_length=255, null=True)),
                 ('active', models.BooleanField(default=True)),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='contacts', to=settings.AUTH_USER_MODEL)),
-                ('to', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='inbound_contacts', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='contacts', to='users.User')),
+                ('to', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='inbound_contacts', to='users.User')),
             ],
         ),
         migrations.AlterUniqueTogether(

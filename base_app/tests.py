@@ -1,10 +1,8 @@
-from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
+from users.models import User
 from .serializers import ForeignUserIdSerializer
-
-User = get_user_model()
 
 
 class ForeignUserIdSerializerTests(APITestCase):

@@ -24,11 +24,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='blocked_users',
-            field=models.ManyToManyField(related_name='blocked_me', through='users.BlackList', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(related_name='blocked_me', through='users.BlackList', to='users.User'),
         ),
         migrations.AddField(
             model_name='user',
             name='contacted_users',
-            field=models.ManyToManyField(related_name='contacted_me', through='users.Contact', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(related_name='contacted_me', through='users.Contact', to='users.User'),
         ),
     ]
